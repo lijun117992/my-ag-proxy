@@ -1,0 +1,241 @@
+/* ========================================================
+   通义千问 (Qwen Studio) 原生嵌入模块样式
+   100% 继承 CPAMC 官方设计系统变量，自动适配明暗主题
+   ======================================================== */
+
+#qwen-embedded-module {
+    display: none;
+    width: 100%;
+    padding: 24px;
+    box-sizing: border-box;
+    font-family: inherit;
+    color: var(--text-primary, #2d2a26);
+    background: transparent;
+    animation: qwenFadeIn 0.2s ease-in-out;
+}
+
+#qwen-embedded-module.active {
+    display: block;
+}
+
+@keyframes qwenFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.qwen-header {
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.qwen-title-group h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+    color: var(--text-primary, #2d2a26);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.qwen-title-group p {
+    font-size: 13px;
+    color: var(--text-secondary, #6d6760);
+    margin: 0;
+}
+
+.qwen-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(139, 134, 128, 0.12);
+    border: 1px solid var(--border-color, #e3e1db);
+    color: var(--text-primary, #2d2a26);
+}
+
+.qwen-tabs {
+    display: flex;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-color, #e3e1db);
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+}
+
+.qwen-tab-btn {
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary, #6d6760);
+    cursor: pointer;
+    border-radius: 8px 8px 0 0;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.qwen-tab-btn:hover {
+    color: var(--text-primary, #2d2a26);
+    background: var(--bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.qwen-tab-btn.active {
+    color: var(--text-primary, #2d2a26);
+    border-bottom: 2px solid var(--text-primary, #2d2a26);
+    background: var(--bg-secondary, #faf9f5);
+}
+
+.qwen-card {
+    background: var(--bg-secondary, #faf9f5);
+    border: 1px solid var(--border-color, #e3e1db);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.qwen-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.qwen-stat-box {
+    background: var(--bg-secondary, #faf9f5);
+    border: 1px solid var(--border-color, #e3e1db);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.qwen-stat-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary, #6d6760);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.qwen-stat-val {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary, #2d2a26);
+    margin-top: 6px;
+}
+
+.qwen-stat-desc {
+    font-size: 12px;
+    color: var(--text-tertiary, #a29c95);
+    margin-top: 4px;
+}
+
+.qwen-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid var(--border-color, #e3e1db);
+    background: var(--bg-primary, #f0eee8);
+    color: var(--text-primary, #2d2a26);
+}
+
+.qwen-btn:hover {
+    background: var(--bg-hover, #e9e6df);
+    border-color: var(--border-hover, #cecac4);
+}
+
+.qwen-btn-primary {
+    background: #10b981;
+    color: #ffffff;
+    border-color: #059669;
+}
+
+.qwen-btn-primary:hover {
+    background: #059669;
+}
+
+.qwen-btn-dark {
+    background: #2d2a26;
+    color: #ffffff;
+    border-color: #1a1816;
+}
+
+.qwen-btn-dark:hover {
+    background: #403c37;
+}
+
+.qwen-input, .qwen-textarea, .qwen-select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e3e1db);
+    background: var(--floating-surface, #fffdf9);
+    color: var(--text-primary, #2d2a26);
+    font-size: 13px;
+    font-family: inherit;
+    transition: border-color 0.15s ease;
+}
+
+.qwen-input:focus, .qwen-textarea:focus, .qwen-select:focus {
+    outline: none;
+    border-color: var(--text-primary, #2d2a26);
+}
+
+.qwen-log-box {
+    background: #18181b;
+    color: #a1a1aa;
+    border-radius: 10px;
+    padding: 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    max-height: 240px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.5;
+}
+
+.qwen-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.qwen-table th {
+    padding: 10px 14px;
+    font-weight: 600;
+    color: var(--text-secondary, #6d6760);
+    border-bottom: 1px solid var(--border-color, #e3e1db);
+}
+
+.qwen-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color, #e3e1db);
+    color: var(--text-primary, #2d2a26);
+}
+
+.qwen-table tr:hover td {
+    background: var(--bg-hover, rgba(0, 0, 0, 0.02));
+}
+
+.qwen-nav-item {
+    cursor: pointer;
+}

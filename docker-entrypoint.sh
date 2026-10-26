@@ -8,7 +8,34 @@ echo "   - 后端 CLIProxyAPI: (内部端口 8081)"
 echo "========================================================"
 
 # 1. 初始化 CLIProxyAPI 内部配置文件与持久化目录
-mkdir -p /CLIProxyAPI /data/auths /root/.cli-proxy-api /app/session /app/logs
+mkdir -p /CLIProxyAPI /data/auths /root/.cli-proxy-api /app/session /app/logs /app/auths
+
+# 自动持久化凭据恢复（防止 Render 免费实例重启重置导致 Antigravity / Claude 凭据丢失）
+if [ -n "$RENDER_AUTHS_BACKUP" ]; then
+    echo "[Auths] 检测到云端持久化凭证环境变量 RENDER_AUTHS_BACKUP，正在自动还原凭据..."
+    node -e '
+        try {
+            const fs = require("fs");
+            const path = require("path");
+            const raw = Buffer.from(process.env.RENDER_AUTHS_BACKUP, "base64").toString("utf8");
+            const map = JSON.parse(raw);
+            let count = 0;
+            Object.entries(map).forEach(([k, v]) => {
+                fs.writeFileSync(path.join("/data/auths", k), typeof v === "string" ? v : JSON.stringify(v, null, 2), "utf8");
+                count++;
+            });
+            console.log(`[Auths] ✅ 已成功自动还原 ${count} 个持久化凭据文件至 /data/auths！`);
+        } catch(e) {
+            console.error("[Auths] 还原持久化凭据失败:", e.message);
+        }
+    ' || true
+fi
+
+if [ -d "/app/auths" ] && [ "$(ls -A /app/auths 2>/dev/null)" ]; then
+    echo "[Auths] 从代码仓库 auths/ 目录载入已提交的凭证..."
+    cp -rn /app/auths/* /data/auths/ 2>/dev/null || true
+fi
+
 cat << 'EOF' > /CLIProxyAPI/config.yaml
 host: "0.0.0.0"
 port: 8081

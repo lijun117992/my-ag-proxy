@@ -169,4 +169,74 @@ router.post('/import', async (req, res) => {
     });
 });
 
+// 4. 导出与备份凭证池（防止 Render 免费实例重启重置）
+router.get('/auths-backup', (req, res) => {
+    const authDir = '/data/auths';
+    const altDir = '/root/.cli-proxy-api';
+    const dirsToCheck = [authDir, altDir].filter(d => fs.existsSync(d));
+
+    const files = [];
+    const contentsMap = {};
+
+    dirsToCheck.forEach(d => {
+        try {
+            const list = fs.readdirSync(d);
+            list.forEach(fname => {
+                const fullPath = path.join(d, fname);
+                const stat = fs.statSync(fullPath);
+                if (stat.isFile() && fname.endsWith('.json')) {
+                    const content = fs.readFileSync(fullPath, 'utf8');
+                    files.push({
+                        filename: fname,
+                        dir: d,
+                        size: stat.size,
+                        modified: stat.mtime
+                    });
+                    contentsMap[fname] = content;
+                }
+            });
+        } catch (e) {}
+    });
+
+    const backupB64 = Buffer.from(JSON.stringify(contentsMap)).toString('base64');
+
+    res.json({
+        success: true,
+        count: files.length,
+        files,
+        backup_b64: files.length > 0 ? backupB64 : null
+    });
+});
+
+// 5. 还原凭据池
+router.post('/auths-restore', (req, res) => {
+    const { backup_b64, files } = req.body;
+    let targetMap = files || {};
+
+    if (backup_b64) {
+        try {
+            targetMap = JSON.parse(Buffer.from(backup_b64, 'base64').toString('utf8'));
+        } catch (e) {
+            return res.status(400).json({ error: '无效的 Base64 凭据备份字符串' });
+        }
+    }
+
+    const authDir = '/data/auths';
+    if (!fs.existsSync(authDir)) fs.mkdirSync(authDir, { recursive: true });
+
+    let restored = 0;
+    Object.entries(targetMap).forEach(([fname, content]) => {
+        if (fname.endsWith('.json')) {
+            fs.writeFileSync(path.join(authDir, fname), typeof content === 'string' ? content : JSON.stringify(content, null, 2), 'utf8');
+            restored++;
+        }
+    });
+
+    res.json({
+        success: true,
+        restored,
+        message: `成功还原 ${restored} 个凭据文件至 /data/auths！`
+    });
+});
+
 export default router;

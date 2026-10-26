@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import bodyParser from 'body-parser';
 
 import { initBrowser, shutdownBrowser } from './src/browser/browser.js';
@@ -97,13 +98,51 @@ app.use('/api/management', managementRoutes);
 app.use('/api', apiRoutes);
 app.use('/v1', apiRoutes);
 
-// 静态资源与 Qwen 统一控制台
+// 静态资源（提供 qwen-module.js 与 qwen-module.css）
 app.use(express.static(path.resolve(__dirname, 'public')));
-app.get(['/', '/dashboard', '/qwen'], (req, res) => res.sendFile(path.resolve(__dirname, 'public', 'index.html')));
 
-// 原版 CPAMC 控制台无缝直达（原样保留 /management.html 与 /cpamc 访问）
-app.get(['/cpamc', '/management.html'], (req, res) => {
-    return proxyRequestToUpstream(req, res, 8081, '/management.html');
+let cachedInjectedHtml = null;
+
+async function serveInjectedManagementHtml(req, res) {
+    if (cachedInjectedHtml) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(cachedInjectedHtml);
+    }
+
+    try {
+        const upstreamHtml = await new Promise((resolve, reject) => {
+            const clientReq = http.get('http://127.0.0.1:8081/management.html', (uRes) => {
+                if (uRes.statusCode !== 200) {
+                    return reject(new Error(`Upstream returned ${uRes.statusCode}`));
+                }
+                const chunks = [];
+                uRes.on('data', chunk => chunks.push(chunk));
+                uRes.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+            });
+            clientReq.on('error', reject);
+            clientReq.setTimeout(4000, () => {
+                clientReq.destroy(new Error('Upstream timeout'));
+            });
+        });
+
+        // 将通义千问模块的原生样式与脚本注入到 CPAMC management.html 的 </body> 前
+        const injected = upstreamHtml.replace('</body>', `
+    <link rel="stylesheet" href="/qwen-module.css">
+    <script src="/qwen-module.js"></script>
+  </body>`);
+
+        cachedInjectedHtml = injected;
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(cachedInjectedHtml);
+    } catch (err) {
+        logWarn(`Upstream management.html fetch failed (${err.message}), falling back to direct proxy`);
+        return proxyRequestToUpstream(req, res, 8081, '/management.html');
+    }
+}
+
+// 唯一网页入口：无论访问根路径 /、/management.html、还是 /cpamc，全部统一呈现植入千问模块的原生 CPAMC 页面！
+app.get(['/', '/management.html', '/cpamc'], (req, res) => {
+    return serveInjectedManagementHtml(req, res);
 });
 
 // 兜底全量反向代理：所有未被拦截的请求（包括 CPAMC 的 /v8、/v0、/assets、/oauth 等）
