@@ -35,7 +35,7 @@ RUN mkdir -p /app/session /app/logs /app/uploads /data/auths
 # 赋予入口脚本执行权限
 RUN chmod +x /app/docker-entrypoint.sh
 
-# 暴露端口：8080 (主网关 CPAMC)，3264 (内部千问引擎)
-EXPOSE 8080 3264
+# 暴露端口：8080 (Node.js 超级主网关)，8081 (内部 CLIProxyAPI)
+EXPOSE 8080 8081
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

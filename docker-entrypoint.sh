@@ -3,15 +3,15 @@ set -e
 
 echo "========================================================"
 echo "🚀 启动 [反代API] 一体化云端超级网关 (Dual Engine)"
-echo "   - 顶层网关: CLIProxyAPI (Google Antigravity / Claude / CPAMC)"
-echo "   - 视觉引擎: Qwen Proxy (2K原画 / HappyHorse 1.1视频)"
+echo "   - 顶层主网关: Node.js (Render 宿主端口 ${PORT:-8080})"
+echo "   - 后端 CLIProxyAPI: (内部端口 8081)"
 echo "========================================================"
 
-# 1. 初始化 CLIProxyAPI 配置文件与上游聚合路由
+# 1. 初始化 CLIProxyAPI 内部配置文件
 mkdir -p /CLIProxyAPI /data/auths /app/session /app/logs
 cat << 'EOF' > /CLIProxyAPI/config.yaml
-host: "0.0.0.0"
-port: 8080
+host: "127.0.0.1"
+port: 8081
 auth-dir: "/data/auths"
 remote-management:
   allow-remote: true
@@ -19,26 +19,15 @@ remote-management:
 usage-statistics-enabled: true
 api-keys:
   - "sk-antigravity-secret-8888"
-
-# 统一聚合通义千问 2K生图与HappyHorse 1.1视频路由
-openai-compatibility:
-  - name: "qwen-creative-engine"
-    base-url: "http://127.0.0.1:3264/v1"
-    api-key-entries:
-      - api-key: "sk-qwen-secret-8888"
-    models:
-      - name: "qwen-image-3.0"
-        alias: "qwen-image-3.0"
-      - name: "happyhorse1.1"
-        alias: "happyhorse1.1"
-      - name: "qwen3.7-plus"
-        alias: "qwen3.7-plus"
 EOF
 
-# 2. 在后台 3264 端口启动通义千问反代与自动化取件引擎
-echo "[Engine] 启动通义千问微服务 (Port 3264)..."
-PORT=3264 node /app/index.js &
+# 2. 在后台启动 CLIProxyAPI 内部服务 (Port 8081)
+echo "[CLIProxyAPI] 启动 CLIProxyAPI 内部服务 (Port 8081)..."
+/CLIProxyAPI/CLIProxyAPI --config /CLIProxyAPI/config.yaml &
 
-# 3. 在前台 8080 端口启动 CLIProxyAPI 主网关与 CPAMC 控制台
-echo "[Gateway] 启动主网关与 CPAMC 控制台 (Port 8080)..."
-exec /CLIProxyAPI/CLIProxyAPI --config /CLIProxyAPI/config.yaml
+# 3. 在前台主端口启动 Node.js 超级网关 (Render 监听端口)
+MAIN_PORT=${PORT:-8080}
+echo "[Node Gateway] 启动超级主网关 (Port ${MAIN_PORT})..."
+export PORT=${MAIN_PORT}
+export HOST="0.0.0.0"
+exec node /app/index.js

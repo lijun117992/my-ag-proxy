@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import apiRoutes from './src/api/routes.js';
 import managementRoutes from './src/api/managementRoutes.js';
+import { proxyRequestToUpstream } from './src/api/upstreamProxy.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -80,9 +81,14 @@ app.use((err, req, res, next) => {
 app.use('/api', apiRoutes);
 app.use('/v1', apiRoutes);
 app.use('/api/management', managementRoutes);
+
+// CPAMC 控制台无缝代理 (Google Antigravity / Claude / Codex OAuth 令牌管理)
+app.use(['/cpamc', '/antigravity-manage'], (req, res) => {
+    return proxyRequestToUpstream(req, res, 8081, '/management.html');
+});
+
 app.use(express.static(path.resolve(__dirname, 'public')));
-app.get('/', (req, res) => res.sendFile(path.resolve(__dirname, 'public', 'index.html')));
-app.get('/management.html', (req, res) => res.sendFile(path.resolve(__dirname, 'public', 'index.html')));
+app.get(['/', '/dashboard', '/management.html'], (req, res) => res.sendFile(path.resolve(__dirname, 'public', 'index.html')));
 
 app.use((req, res) => {
     logWarn(`404 Not Found: ${req.method} ${req.originalUrl}`);

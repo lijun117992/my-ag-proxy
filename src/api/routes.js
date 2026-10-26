@@ -1,4 +1,5 @@
 import { hasStudioAccount, generateStudioImage, generateStudioVideo } from './qwenStudio.js';
+import { proxyRequestToUpstream } from './upstreamProxy.js';
 import express from 'express';
 import { sendMessage, getAllModels, getApiKeys, createChatV2, pollQwenTaskStatus, extractMediaUrl, pagePool, extractAuthToken, preflightFileRequest, testToken } from './chat.js';
 import { sendApiResultError } from './apiErrors.js';
@@ -1300,15 +1301,43 @@ router.get('/models', async (req, res) => {
     try {
         logInfo('Запрос на получение списка моделей');
         const modelsRaw = getAllModels();
+        const localModels = modelsRaw.models.map(m => ({
+            id: m.id || m.name || m,
+            object: 'model',
+            created: 1700000000,
+            owned_by: 'qwen-chat',
+            permission: []
+        }));
+
+        // 注入画王 2K 与 HappyHorse 1.1 视频原生模型
+        localModels.unshift(
+            { id: 'qwen-image-3.0', object: 'model', created: 1700000000, owned_by: 'qwen-studio-2k', permission: [] },
+            { id: 'happyhorse1.1', object: 'model', created: 1700000000, owned_by: 'qwen-studio-video', permission: [] }
+        );
+
+        // 尝试从 8081 聚合 CLIProxyAPI 上游模型 (Antigravity/Claude/Codex/Gemini)
+        try {
+            const upstreamResp = await fetch('http://127.0.0.1:8081/v1/models', {
+                headers: { 'Authorization': req.headers.authorization || 'Bearer sk-antigravity-secret-8888' },
+                signal: AbortSignal.timeout(1500)
+            });
+            if (upstreamResp.ok) {
+                const upstreamData = await upstreamResp.json();
+                if (Array.isArray(upstreamData.data)) {
+                    for (const um of upstreamData.data) {
+                        if (!localModels.some(lm => lm.id === um.id)) {
+                            localModels.push(um);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            // 上游未就绪时平滑忽略
+        }
+
         const openAiModels = {
             object: 'list',
-            data: modelsRaw.models.map(m => ({
-                id: m.id || m.name || m,
-                object: 'model',
-                created: 0,
-                owned_by: 'qwen',
-                permission: []
-            }))
+            data: localModels
         };
         logInfo(`Возвращено ${openAiModels.data.length} моделей (OpenAI формат)`);
         res.json(openAiModels);
@@ -1392,6 +1421,12 @@ router.post('/chat/completions', async (req, res) => {
         const conversationScope = conversationHint ? `conversation:${conversationHint}` : null;
         const forceNewChat = shouldForceNewChat(req);
         logInfo(`Получен OpenAI-совместимый запрос${stream ? ' (stream)' : ''}`);
+
+        const modelLower1 = (model || '').toLowerCase();
+        if (modelLower1 && (modelLower1.startsWith('gemini') || modelLower1.startsWith('claude') || modelLower1.startsWith('codex') || modelLower1.startsWith('gpt') || modelLower1.startsWith('deepseek'))) {
+            logInfo(`Forwarding upstream model ${model} to CLIProxyAPI on 8081`);
+            return proxyRequestToUpstream(req, res, 8081);
+        }
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             logError('Запрос без сообщений');
@@ -1738,6 +1773,12 @@ router.post('/v1/chat/completions', async (req, res) => {
         const forceNewChat = shouldForceNewChat(req);
 
         logInfo(`Получен OpenAI v1 запрос${stream ? ' (stream)' : ''}`);
+
+        const modelLower2 = (model || '').toLowerCase();
+        if (modelLower2 && (modelLower2.startsWith('gemini') || modelLower2.startsWith('claude') || modelLower2.startsWith('codex') || modelLower2.startsWith('gpt') || modelLower2.startsWith('deepseek'))) {
+            logInfo(`Forwarding upstream v1 model ${model} to CLIProxyAPI on 8081`);
+            return proxyRequestToUpstream(req, res, 8081);
+        }
 
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             logError('Запрос без сообщений');
