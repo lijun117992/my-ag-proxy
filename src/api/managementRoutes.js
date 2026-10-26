@@ -130,13 +130,36 @@ router.post('/import', async (req, res) => {
             } catch (e) {}
         }
 
+        const existingIdx = studios.findIndex(s => s.id === acc.email || s.name === acc.email);
+        const studioEntry = {
+            id: acc.email,
+            name: acc.email,
+            email: acc.email,
+            password: acc.password,
+            client_id: acc.client_id,
+            refresh_token: acc.refresh_token,
+            auth_token: acc.refresh_token,
+            daily_credits: 50,
+            has_graph: Boolean(acc.client_id && acc.refresh_token),
+            status: 'active',
+            updated_at: new Date().toISOString()
+        };
+
+        if (existingIdx >= 0) {
+            studios[existingIdx] = { ...studios[existingIdx], ...studioEntry };
+        } else {
+            studios.push(studioEntry);
+        }
+
         results.push({
             email: acc.email,
             hasGraphApi: Boolean(acc.client_id && acc.refresh_token),
             lastCodeFound: codeCheck || '就绪 (可随时自动取件)',
-            status: '已录入待授权池'
+            status: '已录入并激活'
         });
     }
+
+    saveJson(STUDIO_FILE, studios);
 
     res.json({
         success: true,

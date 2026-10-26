@@ -14,13 +14,18 @@ export function proxyRequestToUpstream(req, res, targetPort = 8081, rewritePath 
     delete headers['content-length'];
 
     const hasBody = req.body && Object.keys(req.body).length > 0;
-    const bodyData = hasBody 
-        ? (typeof req.body === 'string' ? req.body : JSON.stringify(req.body))
-        : null;
-
-    if (bodyData) {
+    let bodyData = null;
+    if (hasBody) {
+        const ct = (req.headers['content-type'] || '').toLowerCase();
+        if (ct.includes('urlencoded')) {
+            bodyData = new URLSearchParams(req.body).toString();
+        } else {
+            bodyData = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+            if (!headers['content-type']) {
+                headers['content-type'] = 'application/json';
+            }
+        }
         headers['content-length'] = Buffer.byteLength(bodyData);
-        headers['content-type'] = 'application/json';
     }
 
     const options = {

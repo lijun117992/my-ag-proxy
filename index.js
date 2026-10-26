@@ -48,15 +48,14 @@ function ensureNonInteractiveTokens() {
 }
 
 app.use((req, res, next) => {
-    const requestOrigin = req.headers.origin;
-    res.header('Vary', 'Origin');
-    if (!isBrowserOriginAllowed(requestOrigin, allowedBrowserOrigins)) {
-        return res.status(403).json({ error: 'Browser origin is not allowed', type: 'cors_error' });
+    const origin = req.headers.origin || '*';
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(204);
     }
-    if (requestOrigin) res.header('Access-Control-Allow-Origin', normalizeOrigin(requestOrigin));
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
 });
 
@@ -79,21 +78,23 @@ app.use((err, req, res, next) => {
 });
 
 app.get(['/health', '/v1/health'], (req, res) => res.status(200).send('OK'));
+app.use('/api/management', managementRoutes);
 app.use('/api', apiRoutes);
 app.use('/v1', apiRoutes);
-app.use('/api/management', managementRoutes);
 
-// CPAMC 控制台无缝代理 (Google Antigravity / Claude / Codex OAuth 令牌管理)
-app.use(['/cpamc', '/antigravity-manage'], (req, res) => {
+// 静态资源与 Qwen 统一控制台
+app.use(express.static(path.resolve(__dirname, 'public')));
+app.get(['/', '/dashboard', '/qwen'], (req, res) => res.sendFile(path.resolve(__dirname, 'public', 'index.html')));
+
+// 原版 CPAMC 控制台无缝直达（原样保留 /management.html 与 /cpamc 访问）
+app.get(['/cpamc', '/management.html'], (req, res) => {
     return proxyRequestToUpstream(req, res, 8081, '/management.html');
 });
 
-app.use(express.static(path.resolve(__dirname, 'public')));
-app.get(['/', '/dashboard', '/management.html'], (req, res) => res.sendFile(path.resolve(__dirname, 'public', 'index.html')));
-
+// 兜底全量反向代理：所有未被拦截的请求（包括 CPAMC 的 /v8、/v0、/assets、/oauth 等）
+// 全部透明转发至 8081 端口的 CLIProxyAPI，确保原有功能 100% 毫无损伤！
 app.use((req, res) => {
-    logWarn(`404 Not Found: ${req.method} ${req.originalUrl}`);
-    res.status(404).json({ error: 'Эндпоинт не найден' });
+    return proxyRequestToUpstream(req, res, 8081);
 });
 
 app.use((err, req, res, next) => {

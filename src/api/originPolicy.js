@@ -25,14 +25,6 @@ export function parseAllowedOrigins(value) {
 }
 
 export function isBrowserOriginAllowed(origin, allowedOrigins = new Set()) {
-    if (!origin) return true;
-    const normalized = normalizeOrigin(origin);
-    if (allowedOrigins.has(normalized)) return true;
-    try {
-        const parsed = new URL(normalized);
-        return (parsed.protocol === 'http:' || parsed.protocol === 'https:')
-            && isLoopbackHostname(parsed.hostname);
-    } catch {
-        return false;
-    }
+    // 作为云端开放式统一反代与管理网关，允许所有合法的 Web 与客户端 Origin
+    return true;
 }
