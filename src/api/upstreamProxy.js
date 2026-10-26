@@ -32,8 +32,11 @@ export function proxyRequestToUpstream(req, res, targetPort = 8081, rewritePath 
     };
 
     const upstreamReq = http.request(options, (upstreamRes) => {
-        // 透传响应状态与响应头
-        res.writeHead(upstreamRes.statusCode, upstreamRes.headers);
+        // 透传响应状态与响应头，并移除 iframe 限制以支持在统一控制台内嵌入 CPAMC
+        const respHeaders = { ...upstreamRes.headers };
+        delete respHeaders['x-frame-options'];
+        delete respHeaders['content-security-policy'];
+        res.writeHead(upstreamRes.statusCode, respHeaders);
         upstreamRes.pipe(res);
     });
 

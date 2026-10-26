@@ -13,8 +13,10 @@ RUN apt-get update \
       libxdamage1 libxrandr2 xdg-utils ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+ENV PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     CHROME_PATH=/usr/bin/chromium \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
     NODE_ENV=production
 
 WORKDIR /app
@@ -24,7 +26,7 @@ COPY --from=cliproxy /CLIProxyAPI /CLIProxyAPI
 
 # 复制 Node.js 依赖清单并安装
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm install --omit=dev --no-audit --no-fund
 
 # 复制项目所有源码
 COPY . .
