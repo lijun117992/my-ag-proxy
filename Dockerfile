@@ -6,15 +6,19 @@ FROM node:20-alpine AS runner
 
 RUN apk add --no-cache ca-certificates curl
 
+ENV PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    NODE_ENV=production
+
 WORKDIR /app
 
 # 从第一阶段复制 CLIProxyAPI 主程序并赋予执行权限
 COPY --from=cliproxy /CLIProxyAPI /CLIProxyAPI
 RUN chmod +x /CLIProxyAPI/CLIProxyAPI
 
-# 复制 Node.js 依赖清单并极速安装
+# 复制 Node.js 依赖清单并极速安装（--ignore-scripts 彻底杜绝下载任何外部浏览器，秒级完成）
 COPY package*.json ./
-RUN npm install --omit=dev --no-audit --no-fund
+RUN npm install --omit=dev --no-audit --no-fund --ignore-scripts
 
 # 复制项目所有源码
 COPY . .
