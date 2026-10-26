@@ -1,30 +1,18 @@
-# syntax=docker/dockerfile:1.6
-
 # 第一阶段：从官方 CLIProxyAPI 提取 Go 二进制与资产
 FROM eceasy/cli-proxy-api:latest AS cliproxy
 
-# 第二阶段：Node.js + Chromium + CLIProxyAPI 双引擎运行环境
-FROM node:20-slim AS runner
+# 第二阶段：Alpine 极速双引擎运行环境（纯 musl 架构，100% 兼容 CLIProxyAPI 二进制，秒级构建）
+FROM node:20-alpine AS runner
 
-RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-      chromium fonts-liberation libatk-bridge2.0-0 libatk1.0-0 \
-      libcups2 libdrm2 libgbm1 libnss3 libxcomposite1 \
-      libxdamage1 libxrandr2 xdg-utils ca-certificates curl \
- && rm -rf /var/lib/apt/lists/*
-
-ENV PUPPETEER_SKIP_DOWNLOAD=true \
-    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    CHROME_PATH=/usr/bin/chromium \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
-    NODE_ENV=production
+RUN apk add --no-cache ca-certificates curl
 
 WORKDIR /app
 
-# 从第一阶段复制 CLIProxyAPI 主程序
+# 从第一阶段复制 CLIProxyAPI 主程序并赋予执行权限
 COPY --from=cliproxy /CLIProxyAPI /CLIProxyAPI
+RUN chmod +x /CLIProxyAPI/CLIProxyAPI
 
-# 复制 Node.js 依赖清单并安装
+# 复制 Node.js 依赖清单并极速安装
 COPY package*.json ./
 RUN npm install --omit=dev --no-audit --no-fund
 
