@@ -180,10 +180,15 @@ async function startServer() {
         ensureNonInteractiveTokens();
     }
 
-    const browserInitialized = await initBrowser(false);
-    if (!browserInitialized) {
-        logError('Не удалось инициализировать браузер. Завершение работы.');
-        process.exit(1);
+    try {
+        const browserInitialized = await initBrowser(false);
+        if (browserInitialized) {
+            logInfo('Браузер успешно инициализирован.');
+        } else {
+            logWarn('Браузер не запущен. Сервер работает в режиме Direct API / Qwen Studio / Cloud Gateway.');
+        }
+    } catch (browserErr) {
+        logWarn(`Внимание: Ошибка запуска браузера (работа в режиме Cloud Gateway): ${browserErr.message}`);
     }
 
     try {
