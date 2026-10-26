@@ -1,5 +1,19 @@
 # 更新日志 (CHANGELOG)
 
+## [2.2.0] - 2026-10-27
+### 修复与升级 (Fixes & Upgrades)
+- **全面清除俄文报错并实现友好中文反馈**：
+  - 彻底根治生图时出现的 `Ошибка генерации изображения через Qwen Chat` 俄文乱码及 500 报错。
+  - 重构 `src/api/routes.js` 与 `src/api/apiErrors.js` 中的媒体生成路由与全局异常处理，建立三层自愈降级体系：Qwen Studio 2K 原生引擎 -> 阿里云百炼 DashScope 官方直连 -> Qwen Chat 主站通道 -> 友好中文配置指引。
+  - 账号池凭证缺失或失效时，返回结构化中文指引，页面一键跳转配置，彻底杜绝黑盒报错。
+- **通义千问凭据录入与多通道全面开放**：
+  - 在 CPAMC 侧边栏【通义千问】新增方式一：直接录入通义千问 Cookie / Token，支持直接粘贴 `create.qwen.com` 或 `chat.qwen.ai` 的 Cookie，一键保存并激活 2K 原画与 5秒 视频。
+  - 新增方式二：一键配置保存阿里云百炼 / DashScope API Key (`sk-...`)，官方原生接口直接生图，永不掉线，永久免维护。
+  - 优化方式三：保持微软 Outlook 批量自动取件通道。
+- **全量凭证持久化与防重置备份增强**：
+  - 升级 `/api/management/auths-backup` 与 `/api/management/auths-restore`，将 Google Antigravity OAuth 凭证、通义千问 Studio 账号池 (`studio_accounts.json`)、对话 Token 池 (`tokens.json`) 以及百炼密钥 (`dashscope.json`) 一键打包为统一 Base64 字符串。
+  - 强化 `docker-entrypoint.sh`，容器开机时自动从 `RENDER_AUTHS_BACKUP` 还原全量凭据，彻底杜绝 Render 免费实例重建时数据丢失。
+
 ## [2.1.0] - 2026-10-26
 ### 修复与完善 (Fixes & Restorations)
 - **彻底恢复原生 CPAMC 控制台**：将 Docker 容器运行环境调整为 `node:20-slim` (Debian Bookworm)，与 CLIProxyAPI 官方底包同构 GLIBC，彻底消除 Alpine musl 兼容性导致的 502/404 错误。

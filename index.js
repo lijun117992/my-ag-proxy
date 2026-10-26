@@ -37,6 +37,18 @@ function toBoolean(value) {
 
 const skipAccountMenu = true; // 云端与生产网关永远直接进入免交互无感服务模式，通过网页端管理
 
+// 自动检测并加载本地持久化 DashScope 密钥
+const dashscopeFile = path.resolve(__dirname, 'session', 'dashscope.json');
+if (fs.existsSync(dashscopeFile)) {
+    try {
+        const d = JSON.parse(fs.readFileSync(dashscopeFile, 'utf8'));
+        if (d.api_key && !process.env.DASHSCOPE_API_KEY) {
+            process.env.DASHSCOPE_API_KEY = d.api_key;
+            logInfo('已成功从 session/dashscope.json 加载 DASHSCOPE_API_KEY');
+        }
+    } catch (e) {}
+}
+
 function ensureNonInteractiveTokens() {
     const tokens = loadTokens();
     const now = Date.now();

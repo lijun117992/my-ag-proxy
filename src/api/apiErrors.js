@@ -10,7 +10,7 @@ export function getApiResultStatus(result, fallbackStatus = 500) {
 
 export function sendApiResultError(res, result, { openAI = false } = {}) {
     const status = getApiResultStatus(result);
-    const message = result?.error || 'Внутренняя ошибка сервера';
+    const message = result?.error || '服务器内部错误';
     if (!res.headersSent && typeof res.removeHeader === 'function') {
         for (const header of [
             'Transfer-Encoding',

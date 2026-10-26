@@ -29,17 +29,25 @@ function loadStudioAccounts() {
     }
 }
 
-export function hasStudioAccount() {
+let studioImagePointer = 0;
+let studioVideoPointer = 0;
+
+export function getValidStudioAccounts() {
     const accs = loadStudioAccounts();
-    return accs.length > 0 && Boolean(accs[0].auth_token && accs[0].cookies);
+    return accs.filter(a => Boolean(a && (a.auth_token || a.cookies)));
+}
+
+export function hasStudioAccount() {
+    return getValidStudioAccounts().length > 0;
 }
 
 export async function generateStudioImage(prompt, options = {}) {
-    const accounts = loadStudioAccounts();
-    if (!accounts.length) {
-        throw new Error(`No studio accounts configured in ${ACCOUNTS_FILE}`);
+    const validAccounts = getValidStudioAccounts();
+    if (!validAccounts.length) {
+        throw new Error('当前未配置有效的通义千问 Studio 凭证 (缺少 auth_token 或 cookies)。请前往侧边栏【通义千问】录入');
     }
-    const account = accounts[0];
+    const account = validAccounts[studioImagePointer % validAccounts.length];
+    studioImagePointer = (studioImagePointer + 1) % validAccounts.length;
 
     const size = options.size || '1:1';
     const resolution = options.resolution || '2K';
@@ -51,13 +59,13 @@ export async function generateStudioImage(prompt, options = {}) {
     const headers = {
         'accept': '*/*',
         'accept-language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
-        'authorization': `Bearer ${account.auth_token}`,
         'content-type': 'application/json',
-        'Cookie': account.cookies,
         'origin': 'https://create.qwen.com',
         'referer': 'https://create.qwen.com/',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36'
     };
+    if (account.auth_token) headers['authorization'] = `Bearer ${account.auth_token}`;
+    if (account.cookies) headers['Cookie'] = account.cookies;
 
     const submitPayload = {
         model: 'qwen3',
@@ -142,11 +150,12 @@ export async function generateStudioImage(prompt, options = {}) {
 }
 
 export async function generateStudioVideo(prompt, options = {}) {
-    const accounts = loadStudioAccounts();
-    if (!accounts.length) {
-        throw new Error(`No studio accounts configured in ${ACCOUNTS_FILE}`);
+    const validAccounts = getValidStudioAccounts();
+    if (!validAccounts.length) {
+        throw new Error('当前未配置有效的通义千问 Studio 凭证 (缺少 auth_token 或 cookies)。请前往侧边栏【通义千问】录入');
     }
-    const account = accounts[0];
+    const account = validAccounts[studioVideoPointer % validAccounts.length];
+    studioVideoPointer = (studioVideoPointer + 1) % validAccounts.length;
 
     const size = options.size || '16:9';
     const duration = options.duration || 5;
@@ -177,13 +186,13 @@ export async function generateStudioVideo(prompt, options = {}) {
     const headers = {
         'accept': '*/*',
         'accept-language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
-        'authorization': `Bearer ${account.auth_token}`,
         'content-type': 'application/json',
-        'Cookie': account.cookies,
         'origin': 'https://create.qwen.com',
         'referer': 'https://create.qwen.com/',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36'
     };
+    if (account.auth_token) headers['authorization'] = `Bearer ${account.auth_token}`;
+    if (account.cookies) headers['Cookie'] = account.cookies;
 
     const submitPayload = {
         model: model,

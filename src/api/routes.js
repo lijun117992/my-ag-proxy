@@ -369,13 +369,13 @@ function authMiddleware(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         logError('Отсутствует или некорректный заголовок авторизации');
-        return res.status(401).json({ error: 'Требуется авторизация' });
+        return res.status(401).json({ error: '需要授权 (缺少 Authorization Bearer Key)' });
     }
 
     const token = authHeader.substring(7).trim();
     if (!matchesClientCredential(token, apiKeys)) {
         logError('Предоставлен недействительный API ключ');
-        return res.status(401).json({ error: 'Недействительный токен' });
+        return res.status(401).json({ error: '无效的 API 授权密钥' });
     }
     // Keep only a one-way fingerprint on the request; never persist or log the
     // validated proxy bearer itself.
@@ -1065,7 +1065,7 @@ router.post('/chat', async (req, res) => {
 
         if (!messageContent) {
             logError('Запрос без сообщения');
-            return res.status(400).json({ error: 'Сообщение не указано' });
+            return res.status(400).json({ error: '消息内容不能为空' });
         }
 
         const filePreflight = preflightFileRequest(messageContent, null, getSessionKey(req));
@@ -1266,7 +1266,7 @@ router.post('/chat', async (req, res) => {
         res.json(result);
     } catch (error) {
         logError('Ошибка при обработке запроса', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: '服务器内部错误' });
     }
 });
 
@@ -1293,7 +1293,7 @@ router.get('/health', async (req, res) => {
         });
     } catch (error) {
         logError('Ошибка health check', error);
-        res.status(500).json({ ok: false, error: 'Health-проверка не удалась' });
+        res.status(500).json({ ok: false, error: '健康检查失败' });
     }
 });
 
@@ -1343,7 +1343,7 @@ router.get('/models', async (req, res) => {
         res.json(openAiModels);
     } catch (error) {
         logError('Ошибка при получении списка моделей', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: '服务器内部错误' });
     }
 });
 
@@ -1384,7 +1384,7 @@ router.get('/status', async (req, res) => {
         res.json({ authenticated: isAuthenticated, message: isAuthenticated ? 'Авторизация активна' : 'Требуется авторизация', accounts });
     } catch (error) {
         logError('Ошибка при проверке статуса авторизации', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: '服务器内部错误' });
     }
 });
 
@@ -1400,14 +1400,14 @@ router.post('/chats', async (req, res) => {
         res.json({ chatId: result.chatId, success: true });
     } catch (error) {
         logError('Ошибка при создании чата', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: '服务器内部错误' });
     }
 });
 
 router.get('/chat/completions', (req, res) => {
     res.status(405).json({
-        error: 'Метод не поддерживается',
-        message: 'Используйте POST /api/chat/completions'
+        error: '请求方法不受支持',
+        message: '请使用 POST /v1/chat/completions'
     });
 });
 
@@ -2143,18 +2143,18 @@ router.post('/files/getstsToken', async (req, res) => {
         const fileInfo = req.body;
         if (!fileInfo?.filename || !fileInfo?.filesize || !fileInfo?.filetype) {
             logError('Некорректные данные о файле');
-            return res.status(400).json({ error: 'Некорректные данные о файле' });
+            return res.status(400).json({ error: '文件数据格式不正确' });
         }
         res.json(await getStsToken(fileInfo, getSessionKey(req)));
     } catch (error) {
         logError('Ошибка при получении STS токена', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: '服务器内部错误' });
     }
 });
 
 router.post('/files/upload', upload.single('file'), async (req, res) => {
     try {
-        if (!req.file) { logError('Файл не был загружен'); return res.status(400).json({ error: 'Файл не был загружен' }); }
+        if (!req.file) { logError('Файл не был загружен'); return res.status(400).json({ error: '未检测到上传的文件' }); }
         logInfo(`Файл загружен на сервер: ${req.file.originalname} (${req.file.size} байт)`);
 
         const result = await uploadFileToQwen(req.file.path, getSessionKey(req));
@@ -2177,12 +2177,12 @@ router.post('/files/upload', upload.single('file'), async (req, res) => {
             });
         } else {
             logError(`Ошибка при загрузке файла в OSS: ${result.error}`);
-            res.status(500).json({ error: 'Ошибка при загрузке файла' });
+            res.status(500).json({ error: '文件上传处理失败' });
         }
     } catch (error) {
         logError('Ошибка при загрузке файла', error);
         if (req.file?.path) { try { fs.unlinkSync(req.file.path); } catch { /* ignore */ } }
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: '服务器内部错误' });
     }
 });
 
@@ -2208,7 +2208,7 @@ router.post('/chats/:chatId/history', async (req, res) => {
         });
     } catch (error) {
         logError('Ошибка при сохранении истории чата', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: '服务器内部错误' });
     }
 });
 
@@ -2228,7 +2228,7 @@ router.get('/chats/:chatId/history', async (req, res) => {
         });
     } catch (error) {
         logError('Ошибка при получении истории чата', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: '服务器内部错误' });
     }
 });
 
@@ -2307,16 +2307,16 @@ router.post('/images/generations', async (req, res) => {
     try {
         const { prompt, model, n, size, response_format, provider } = req.body;
 
-        logInfo('Получен запрос на генерацию изображения');
-        logDebug(`Запрос: ${prompt?.substring(0, 100)}${prompt?.length > 100 ? '...' : ''}`);
+        logInfo('收到图像生成请求: ' + (prompt?.substring(0, 100) || ''));
 
         if (!prompt) {
-            return res.status(400).json({ error: 'Параметр "prompt" обязателен' });
+            return res.status(400).json({ error: '参数 "prompt" 为必填项' });
         }
 
+        // 1. 优先尝试 Qwen Studio (2K 画王 2048x2048)
         if (hasStudioAccount() && provider !== 'dashscope') {
             try {
-                logInfo('Используем Qwen Studio 2K для генерации изображения...');
+                logInfo('正在使用 Qwen Studio 2K 原生引擎生成高清画作...');
                 const studioResult = await generateStudioImage(prompt, {
                     size: req.body.aspect_ratio || (size === '1024x1024' || size === '1:1' ? '1:1' : '1:1'),
                     resolution: req.body.resolution || '2K'
@@ -2328,105 +2328,125 @@ router.post('/images/generations', async (req, res) => {
                     raw: studioResult
                 }));
             } catch (studioErr) {
-                logError(`Qwen Studio error: ${studioErr.message}, fallback to Qwen Chat...`);
+                logError(`Qwen Studio 2K 生图异常: ${studioErr.message}，尝试备用通道...`);
             }
         }
 
-        if (provider === 'dashscope') {
-            const apiKey = process.env.DASHSCOPE_API_KEY;
-            if (!apiKey) {
+        // 2. 次优：DashScope 官方 API (若配置了 DASHSCOPE_API_KEY)
+        const dashscopeKey = process.env.DASHSCOPE_API_KEY;
+        if (provider === 'dashscope' || dashscopeKey) {
+            if (dashscopeKey) {
+                try {
+                    logInfo('正在使用 DashScope (阿里云百炼) 官方引擎生成图像...');
+                    let imageModel = model || 'qwen-image-plus';
+                    if (imageModel === 'dall-e-3' || imageModel === 'dall-e-2') imageModel = 'qwen-image-plus';
+                    const result = await generateImage(prompt, imageModel, {
+                        n: n || 1,
+                        size: normalizeDashScopeSize(size),
+                        promptExtend: true,
+                        watermark: false
+                    });
+
+                    if (result.error) {
+                        logError(`DashScope 生图失败: ${result.error}`);
+                        if (provider === 'dashscope') {
+                            return res.status(500).json({ error: 'DashScope 图片生成失败: ' + result.error });
+                        }
+                    } else {
+                        return res.json(buildOpenAiImageResponse({
+                            imageUrl: result.imageUrl,
+                            prompt,
+                            model: imageModel,
+                            raw: result,
+                            provider: 'dashscope'
+                        }));
+                    }
+                } catch (dashErr) {
+                    logError(`DashScope 调用异常: ${dashErr.message}`);
+                }
+            } else if (provider === 'dashscope') {
                 return res.status(503).json({
-                    error: 'DashScope API генерации изображений не настроен',
-                    message: 'Установите переменную окружения DASHSCOPE_API_KEY или используйте provider=qwen-chat'
+                    error: 'DashScope API 未配置',
+                    message: '请在侧边栏【通义千问】模块中配置 DASHSCOPE_API_KEY，或添加通义千问 Studio 凭证。'
+                });
+            }
+        }
+
+        // 3. 通义主站对话通道生图 (Qwen Chat t2i)
+        if (hasValidTokens()) {
+            const chatModel = getMappedModel(model || CHAT_MEDIA_MODEL);
+            const aspectRatio = normalizeQwenAspectRatio(size, req.body.aspect_ratio || '16:9');
+            const result = await sendMessage(
+                prompt,
+                chatModel,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                't2i',
+                aspectRatio,
+                true,
+                0,
+                null,
+                null,
+                getSessionKey(req)
+            );
+
+            if (result.error) {
+                logError(`Qwen Chat 生图失败: ${result.error}`);
+                let msg = '通义千问生图失败: ' + (result.error || '未知错误');
+                return res.status(500).json({ error: msg, message: msg, details: result.details });
+            }
+
+            const imageUrl = extractMediaUrl(result, 'image') || result.choices?.[0]?.message?.content || null;
+            if (!imageUrl) {
+                return res.status(502).json({
+                    error: '通义千问未能返回有效的图片链接',
+                    raw: result
                 });
             }
 
-            let imageModel = model || 'qwen-image-plus';
-            if (imageModel === 'dall-e-3' || imageModel === 'dall-e-2') imageModel = 'qwen-image-plus';
-            const result = await generateImage(prompt, imageModel, {
-                n: n || 1,
-                size: normalizeDashScopeSize(size),
-                promptExtend: true,
-                watermark: false
-            });
-
-            if (result.error) {
-                logError(`Ошибка генерации DashScope: ${result.error}`);
-                return res.status(500).json({ error: 'Ошибка генерации изображения', message: result.error });
-            }
-
-            return res.json(buildOpenAiImageResponse({
-                imageUrl: result.imageUrl,
-                prompt,
-                model: imageModel,
-                raw: result,
-                provider: 'dashscope'
-            }));
+            logInfo(`Qwen Chat 图像生成成功: ${imageUrl}`);
+            return res.json(buildOpenAiImageResponse({ imageUrl, prompt, model: chatModel, raw: result }));
         }
 
-        const chatModel = getMappedModel(model || CHAT_MEDIA_MODEL);
-        const aspectRatio = normalizeQwenAspectRatio(size, req.body.aspect_ratio || '16:9');
-        const result = await sendMessage(
-            prompt,
-            chatModel,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            't2i',
-            aspectRatio,
-            true,
-            0,
-            null,
-            null,
-            getSessionKey(req)
-        );
-
-        if (result.error) {
-            logError(`Ошибка генерации Qwen Chat image: ${result.error}`);
-            return res.status(500).json({ error: 'Ошибка генерации изображения через Qwen Chat', message: result.error, details: result.details });
-        }
-
-        const imageUrl = extractMediaUrl(result, 'image') || result.choices?.[0]?.message?.content || null;
-        if (!imageUrl) {
-            return res.status(502).json({
-                error: 'Qwen Chat не вернул URL изображения',
-                raw: result
-            });
-        }
-
-        logInfo(`Изображение Qwen Chat сгенерировано: ${imageUrl}`);
-        return res.json(buildOpenAiImageResponse({ imageUrl, prompt, model: chatModel, raw: result }));
+        // 若三大通道均未就绪，返回友好中文提示
+        return res.status(400).json({
+            error: '生图失败: 当前账号池暂无可用有效的授权凭证 (Cookie / Token / DashScope Key)。',
+            message: '请前往侧边栏【通义千问 (2K/视频)】页面添加通义千问 Cookie/Token，或配置 DASHSCOPE_API_KEY。',
+            guide: '1. 在【账号录入】粘贴通义千问 Cookie 或 Token；\n2. 或在【DashScope】录入阿里云百炼 API Key 永久免登。'
+        });
     } catch (error) {
-        logError('Ошибка при генерации изображения', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера', message: error.message });
+        logError('图片生成过程异常', error);
+        res.status(500).json({ error: '服务器内部错误', message: error.message });
     }
 });
 
 /**
- * POST /api/videos/generations - Генерация видео через Qwen Chat (`chatType: t2v`).
+ * POST /api/videos/generations - 生成视频
  */
 router.post('/videos/generations', async (req, res) => {
     try {
         const { prompt, model, size, wait, waitForCompletion } = req.body;
         const shouldWait = waitForCompletion ?? wait ?? true;
 
-        logInfo('Получен запрос на генерацию видео через Qwen Chat');
-        logDebug(`Видео-запрос: ${prompt?.substring(0, 100)}${prompt?.length > 100 ? '...' : ''}`);
+        logInfo('收到视频生成请求: ' + (prompt?.substring(0, 100) || ''));
 
         if (!prompt) {
-            return res.status(400).json({ error: 'Параметр "prompt" обязателен' });
+            return res.status(400).json({ error: '参数 "prompt" 为必填项' });
         }
 
+        // 1. 优先尝试 Qwen Studio (HappyHorse 1.1)
         if (hasStudioAccount()) {
             try {
-                logInfo('Using Qwen Studio (HappyHorse 1.1) for video generation...');
+                logInfo('正在使用 Qwen Studio (HappyHorse 1.1) 生成 5 秒电影级视频...');
                 const studioResult = await generateStudioVideo(prompt, {
                     size: req.body.aspect_ratio || size || '16:9',
                     duration: req.body.duration || 5,
-                    model: model || 'happyhorse1.1'
+                    model: model || 'happyhorse1.1',
+                    reference_images: req.body.reference_images || []
                 });
                 return res.json({
                     created: Math.floor(Date.now() / 1000),
@@ -2438,51 +2458,59 @@ router.post('/videos/generations', async (req, res) => {
                     raw: studioResult
                 });
             } catch (studioErr) {
-                logError('Qwen Studio Video error: ' + studioErr.message + ', fallback to Qwen Chat...');
+                logError('Qwen Studio 视频生成异常: ' + studioErr.message + '，尝试备用通道...');
             }
         }
-        const chatModel = getMappedModel(model || CHAT_MEDIA_MODEL);
-        const aspectRatio = normalizeQwenAspectRatio(size, req.body.aspect_ratio || '16:9');
-        const result = await sendMessage(
-            prompt,
-            chatModel,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            't2v',
-            aspectRatio,
-            shouldWait,
-            0,
-            null,
-            null,
-            getSessionKey(req)
-        );
 
-        if (result.error) {
-            logError(`Ошибка генерации Qwen Chat video: ${result.error}`);
-            return res.status(500).json({ error: 'Ошибка генерации видео через Qwen Chat', message: result.error, details: result.details, task_id: result.task_id });
+        // 2. 通义主站对话通道生视频 (Qwen Chat t2v)
+        if (hasValidTokens()) {
+            const chatModel = getMappedModel(model || CHAT_MEDIA_MODEL);
+            const aspectRatio = normalizeQwenAspectRatio(size, req.body.aspect_ratio || '16:9');
+            const result = await sendMessage(
+                prompt,
+                chatModel,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                't2v',
+                aspectRatio,
+                shouldWait,
+                0,
+                null,
+                null,
+                getSessionKey(req)
+            );
+
+            if (result.error) {
+                logError(`Qwen Chat 视频生成失败: ${result.error}`);
+                let msg = '通义千问视频生成失败: ' + (result.error || '未知错误');
+                return res.status(500).json({ error: msg, message: msg, details: result.details, task_id: result.task_id });
+            }
+
+            const response = buildVideoResponse({ result, prompt, model: chatModel, waitForCompletion: shouldWait });
+            logInfo(response.video_url ? `视频生成成功: ${response.video_url}` : `视频任务已创建: ${response.task_id}`);
+            return res.json(response);
         }
 
-        const response = buildVideoResponse({ result, prompt, model: chatModel, waitForCompletion: shouldWait });
-        logInfo(response.video_url ? `Видео Qwen Chat сгенерировано: ${response.video_url}` : `Видео-задача создана: ${response.task_id}`);
-        return res.json(response);
+        // 若无可用通道
+        return res.status(400).json({
+            error: '视频生成失败: 当前账号池暂无可用有效的通义千问 Studio 或主站凭据。',
+            message: '请前往侧边栏【通义千问 (2K/视频)】页面添加通义千问凭据。'
+        });
     } catch (error) {
-        logError('Ошибка при генерации видео', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера', message: error.message });
+        logError('视频生成异常', error);
+        res.status(500).json({ error: '服务器内部错误', message: error.message });
     }
 });
 
-/**
- * GET /api/tasks/status/:taskId - статус долгой задачи Qwen Chat (видео и будущие async-функции).
- */
 router.get('/tasks/status/:taskId', async (req, res) => {
     try {
         const { taskId } = req.params;
         const wait = ['1', 'true', 'yes'].includes(String(req.query.wait || '').toLowerCase());
-        if (!taskId) return res.status(400).json({ error: 'taskId обязателен' });
+        if (!taskId) return res.status(400).json({ error: '任务 ID (taskId) 不能为空' });
 
         const result = await pollQwenTaskStatus(taskId, wait, getSessionKey(req));
         if (result.error && !result.data) {
@@ -2491,7 +2519,7 @@ router.get('/tasks/status/:taskId', async (req, res) => {
         return res.json({ watermark: FORGETMEAI_WATERMARK, ...result });
     } catch (error) {
         logError('Ошибка при проверке статуса задачи', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера', message: error.message });
+        res.status(500).json({ error: '服务器内部错误', message: error.message });
     }
 });
 
@@ -2527,7 +2555,7 @@ router.get('/images/models', async (req, res) => {
         });
     } catch (error) {
         logError('Ошибка при получении списка моделей изображений', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: '服务器内部错误' });
     }
 });
 
@@ -2580,7 +2608,7 @@ router.get('/images/status', async (req, res) => {
         });
     } catch (error) {
         logError('Ошибка при проверке статуса API изображений', error);
-        res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+        res.status(500).json({ error: '服务器内部错误' });
     }
 });
 

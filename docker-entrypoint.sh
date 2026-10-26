@@ -20,11 +20,22 @@ if [ -n "$RENDER_AUTHS_BACKUP" ]; then
             const raw = Buffer.from(process.env.RENDER_AUTHS_BACKUP, "base64").toString("utf8");
             const map = JSON.parse(raw);
             let count = 0;
+            if (!fs.existsSync("/data/auths")) fs.mkdirSync("/data/auths", { recursive: true });
+            if (!fs.existsSync("/app/session")) fs.mkdirSync("/app/session", { recursive: true });
             Object.entries(map).forEach(([k, v]) => {
-                fs.writeFileSync(path.join("/data/auths", k), typeof v === "string" ? v : JSON.stringify(v, null, 2), "utf8");
+                const content = typeof v === "string" ? v : JSON.stringify(v, null, 2);
+                if (k === "__session_studio_accounts.json") {
+                    fs.writeFileSync("/app/session/studio_accounts.json", content, "utf8");
+                } else if (k === "__session_tokens.json") {
+                    fs.writeFileSync("/app/session/tokens.json", content, "utf8");
+                } else if (k === "__session_dashscope.json") {
+                    fs.writeFileSync("/app/session/dashscope.json", content, "utf8");
+                } else {
+                    fs.writeFileSync(path.join("/data/auths", k), content, "utf8");
+                }
                 count++;
             });
-            console.log(`[Auths] ✅ 已成功自动还原 ${count} 个持久化凭据文件至 /data/auths！`);
+            console.log(`[Auths] ✅ 已成功自动还原 ${count} 个全量持久化凭据文件至 /data/auths 与 /app/session！`);
         } catch(e) {
             console.error("[Auths] 还原持久化凭据失败:", e.message);
         }
