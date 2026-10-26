@@ -78,6 +78,7 @@ app.use((err, req, res, next) => {
     return next(err);
 });
 
+app.get(['/health', '/v1/health'], (req, res) => res.status(200).send('OK'));
 app.use('/api', apiRoutes);
 app.use('/v1', apiRoutes);
 app.use('/api/management', managementRoutes);
@@ -192,44 +193,29 @@ async function startServer() {
     }
 
     try {
-        app.listen(port, host, () => {
-            const displayHost = host === '0.0.0.0' ? 'localhost' : host;
-            logInfo(`Сервер запущен на ${host}:${port}`);
-            logInfo(`API доступен по адресу: http://${displayHost}:${port}/api`);
-            logInfo('Для проверки статуса авторизации: GET /api/status');
-            logInfo('Для отправки сообщения: POST /api/chat');
-            logInfo('Для получения списка моделей: GET /api/models');
-            logInfo('======================================================');
-            logInfo('API v2 - История чатов хранится на серверах Qwen');
-            logInfo('Создать новый чат: POST /api/chats');
-            logInfo('Отправить сообщение: POST /api/chat (с chatId и parentId)');
-            logInfo('======================================================');
-            logInfo('Доступно 25 моделей Qwen (через систему маппинга):');
-            logInfo('- Стандартные: qwen-max, qwen-plus, qwen-turbo и их latest-версии');
-            logInfo('- Coder: qwen3-coder-plus, qwen2.5-coder-*b-instruct (0.5b - 32b)');
-            logInfo('- Визуальные: qwen-vl-max, qwen-vl-plus и их latest-версии');
-            logInfo('- Qwen 3: qwen3, qwen3-max, qwen3-plus, qwen3-omni-flash');
-            logInfo('- Qwen 3.5: qwen3.5-plus, qwen3.5-flash, qwen3.5-397b-a17b, qwen3.5-122b-a10b, qwen3.5-27b, qwen3.5-35b-a3b');
-            logInfo('======================================================');
-            logInfo('Формат JSON запроса на чат:');
-            logInfo('{ "message": "текст сообщения", "model": "название модели (опционально)", "chatId": "ID чата (опционально)", "parentId": "ID родительского сообщения (опционально)" }');
-            logInfo('Пример первого запроса: { "message": "Привет, как дела?" }');
-            logInfo('Пример второго запроса: { "message": "А что ты умеешь?", "chatId": "полученный_id_чата", "parentId": "полученный_parentId" }');
-            logInfo('======================================================');
-            logInfo('Поддержка OpenAI совместимого API: POST /api/chat/completions');
-            logInfo('В ответе возвращаются chatId и parentId для продолжения диалога');
-            logInfo('======================================================');
+        const primaryPort = Number(process.env.PORT) || 8080;
+        const listenHost = '0.0.0.0';
 
+        app.listen(primaryPort, listenHost, () => {
+            logInfo(`主网关服务已成功启动在: ${listenHost}:${primaryPort}`);
+            logInfo(`统一 API 入口: http://${listenHost}:${primaryPort}/v1`);
             getApiKeys();
             getAvailableModelsFromFile();
         });
-    } catch (err) {
-        if (err.code === 'EADDRINUSE') {
-            logError(`Порт ${port} уже используется. Возможно, сервер уже запущен.`);
-            await shutdownBrowser();
-            process.exit(1);
+
+        // 如果主端口不是 8080，同时监听 8080 端口，确保无论 Render 探测 8080 还是 10000 均 100% 成功
+        if (primaryPort !== 8080) {
+            try {
+                app.listen(8080, listenHost, () => {
+                    logInfo(`Render 兼容端口已激活: ${listenHost}:8080`);
+                });
+            } catch (err8080) {
+                logWarn(`8080 兼容端口绑定提示: ${err8080.message}`);
+            }
         }
-        throw err;
+    } catch (err) {
+        logError('服务器启动异常', err);
+        process.exit(1);
     }
 }
 

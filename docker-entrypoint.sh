@@ -3,7 +3,7 @@ set -e
 
 echo "========================================================"
 echo "🚀 启动 [反代API] 一体化云端超级网关 (Dual Engine)"
-echo "   - 顶层主网关: Node.js (Render 宿主端口 ${PORT:-8080})"
+echo "   - 顶层主网关: Node.js (Render 宿主双端口 8080 & ${PORT:-10000})"
 echo "   - 后端 CLIProxyAPI: (内部端口 8081)"
 echo "========================================================"
 
@@ -25,9 +25,6 @@ EOF
 echo "[CLIProxyAPI] 启动 CLIProxyAPI 内部服务 (Port 8081)..."
 /CLIProxyAPI/CLIProxyAPI --config /CLIProxyAPI/config.yaml &
 
-# 3. 在前台主端口启动 Node.js 超级网关 (Render 监听端口)
-MAIN_PORT=${PORT:-8080}
-echo "[Node Gateway] 启动超级主网关 (Port ${MAIN_PORT})..."
-export PORT=${MAIN_PORT}
+# 3. 在前台启动 Node.js 超级网关
 export HOST="0.0.0.0"
 exec node /app/index.js
