@@ -77,7 +77,22 @@ app.use((err, req, res, next) => {
     return next(err);
 });
 
+// 诊断与状态接口
 app.get(['/health', '/v1/health'], (req, res) => res.status(200).send('OK'));
+app.get('/api/debug/cliproxy', async (req, res) => {
+    try {
+        const fs = await import('fs');
+        const logPath = '/app/logs/cliproxy.log';
+        const log = fs.existsSync(logPath) ? fs.readFileSync(logPath, 'utf8') : 'No cliproxy.log found';
+        res.json({
+            ok: true,
+            uptime: process.uptime(),
+            log: log.slice(-4000)
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 app.use('/api/management', managementRoutes);
 app.use('/api', apiRoutes);
 app.use('/v1', apiRoutes);

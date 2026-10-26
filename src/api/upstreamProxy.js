@@ -57,8 +57,12 @@ export function proxyRequestToUpstream(req, res, targetPort = 8081, rewritePath 
         }
     });
 
-    if (bodyData) {
+    if (['GET', 'HEAD'].includes(req.method)) {
+        upstreamReq.end();
+    } else if (bodyData) {
         upstreamReq.write(bodyData);
+        upstreamReq.end();
+    } else if (req.readableEnded) {
         upstreamReq.end();
     } else {
         req.pipe(upstreamReq);
