@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen Creative Proxy - 云端配额与多账号控制台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' },
+                        dark: { 800: '#1e293b', 900: '#0f172a', 950: '#020617' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .gradient-text { background: linear-gradient(135deg, #a855f7 0%, #6366f1 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="bg-dark-950 text-slate-100 min-h-screen flex flex-col font-sans">
+    <!-- 顶栏导航 -->
+    <header class="glass sticky top-0 z-50 border-b border-slate-800 px-6 py-3.5 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-purple-500 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                <i class="fa-solid fa-wand-magic-sparkles text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold gradient-text leading-tight">Qwen Creative Proxy</h1>
+                <p class="text-xs text-slate-400">通义画王 2K 原画 & HappyHorse 1.1 视频云端网关</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> 云端服务运行中
+            </span>
+            <a href="https://github.com/lijun117992/my-ag-proxy" target="_blank" class="text-slate-400 hover:text-white text-sm px-2 py-1 transition-colors">
+                <i class="fa-brands fa-github text-lg"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- 主布局 -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- 左侧菜单 -->
+        <aside class="w-64 glass border-r border-slate-800 p-4 flex flex-col gap-1 hidden md:flex">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">管理控制</div>
+            <button onclick="switchTab('quota')" id="tab-btn-quota" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-brand-600 text-white transition-all">
+                <i class="fa-solid fa-chart-pie w-5 text-center"></i> 配额与账号池
+            </button>
+            <button onclick="switchTab('import')" id="tab-btn-import" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
+                <i class="fa-solid fa-envelope-open-text w-5 text-center"></i> 自动取件与批量导入
+            </button>
+            <button onclick="switchTab('playground')" id="tab-btn-playground" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
+                <i class="fa-solid fa-clapperboard w-5 text-center"></i> 2K生图 & 视频试炼场
+            </button>
+            <button onclick="switchTab('gateway')" id="tab-btn-gateway" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
+                <i class="fa-solid fa-network-wired w-5 text-center"></i> 远程 API 接入中心
+            </button>
+        </aside>
+
+        <!-- 内容区域 -->
+        <main class="flex-1 overflow-y-auto p-6 space-y-6">
+            <!-- 视图 1：配额与账号池概览 -->
+            <section id="view-quota" class="space-y-6">
+                <!-- 统计大卡片 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass p-5 rounded-2xl border-l-4 border-l-indigo-500">
+                        <div class="text-slate-400 text-xs font-medium uppercase">已挂载活跃账号</div>
+                        <div class="text-3xl font-extrabold text-white mt-1" id="stat-total-accounts">-</div>
+                        <div class="text-xs text-indigo-400 mt-2 flex items-center gap-1">
+                            <i class="fa-solid fa-users"></i> 自动轮询负载均衡
+                        </div>
+                    </div>
+                    <div class="glass p-5 rounded-2xl border-l-4 border-l-purple-500">
+                        <div class="text-slate-400 text-xs font-medium uppercase">每日 2K 顶级画王生图</div>
+                        <div class="text-3xl font-extrabold text-purple-400 mt-1" id="stat-total-2k">-</div>
+                        <div class="text-xs text-slate-400 mt-2">单号 25 张 / 2048x2048 原画</div>
+                    </div>
+                    <div class="glass p-5 rounded-2xl border-l-4 border-l-pink-500">
+                        <div class="text-slate-400 text-xs font-medium uppercase">每日 HappyHorse 1.1 视频</div>
+                        <div class="text-3xl font-extrabold text-pink-400 mt-1" id="stat-total-videos">-</div>
+                        <div class="text-xs text-slate-400 mt-2">单号 1 条 / 5秒电影级连贯动作</div>
+                    </div>
+                    <div class="glass p-5 rounded-2xl border-l-4 border-l-cyan-500">
+                        <div class="text-slate-400 text-xs font-medium uppercase">每日主站对话生图</div>
+                        <div class="text-3xl font-extrabold text-cyan-400 mt-1" id="stat-total-chat">-</div>
+                        <div class="text-xs text-slate-400 mt-2">单号 40 张 / 快速原型概念</div>
+                    </div>
+                </div>
+
+                <!-- 账号列表面板 -->
+                <div class="glass rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-brand-500"></i> 当前账号池状态清单
+                        </h2>
+                        <button onclick="loadAccounts()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate-right"></i> 刷新额度
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="text-xs uppercase bg-slate-800/50 text-slate-400 border-b border-slate-700">
+                                <tr>
+                                    <th class="py-3 px-4">账号标识 (ID / 邮箱)</th>
+                                    <th class="py-3 px-4">画王 2K 原画 (25/天)</th>
+                                    <th class="py-3 px-4">HappyHorse 视频 (1/天)</th>
+                                    <th class="py-3 px-4">主站对话 (40/天)</th>
+                                    <th class="py-3 px-4">凭证状态</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accounts-table-body" class="divide-y divide-slate-800">
+                                <tr><td colspan="5" class="text-center py-6 text-slate-500">正在读取账号池状态...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 视图 2：批量自动取件与导入 -->
+            <section id="view-import" class="space-y-6 hidden">
+                <div class="glass rounded-2xl p-6 space-y-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-bolt text-yellow-400"></i> 微软 Outlook 自动取件 & 批量导入
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">
+                            无需再去任何邮箱管理系统手动查件！直接把您的账号信息粘贴到下方，系统直连微软 Graph API 自动收取 6 位验证码，一键极速入库。
+                        </p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-xs font-semibold text-slate-300">账号列表（每行一个账号）：</label>
+                        <textarea id="import-text" rows="8" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand-500 transition-colors" placeholder="支持格式：
+邮箱----密码----client_id----refresh_token (自动取件推荐)
+或者：
+邮箱----密码"></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-500">
+                            💡 自动收取验证码、自动穿透防盗链 Cookie 与 30 天保活。
+                        </span>
+                        <div class="flex gap-2">
+                            <button onclick="testSampleCode()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition-colors">
+                                <i class="fa-solid fa-envelope"></i> 测试首行自动取件
+                            </button>
+                            <button onclick="submitBatchImport()" id="btn-import" class="px-5 py-2 bg-gradient-to-r from-brand-600 to-purple-600 hover:opacity-90 text-white rounded-xl text-xs font-semibold shadow-lg shadow-brand-500/20 transition-all flex items-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> 一键自动取件并入库
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 操作日志反馈窗口 -->
+                    <div id="import-log-box" class="hidden bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono space-y-1">
+                        <div class="text-slate-400 font-bold mb-2">执行日志与结果：</div>
+                        <div id="import-log-content" class="text-slate-300 space-y-1"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 视图 3：2K 生图 & 视频试炼场 -->
+            <section id="view-playground" class="space-y-6 hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- 左侧：生成参数 -->
+                    <div class="lg:col-span-5 glass rounded-2xl p-6 space-y-4">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-palette text-purple-400"></i> 在线创作试炼场
+                        </h2>
+
+                        <!-- 模式切换 -->
+                        <div class="flex rounded-xl bg-slate-900 p-1 border border-slate-800">
+                            <button onclick="setPlaygroundMode('image')" id="pg-mode-img" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white">
+                                🎨 2K 超清原画 (Qwen-Image 3.0)
+                            </button>
+                            <button onclick="setPlaygroundMode('video')" id="pg-mode-video" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white">
+                                🎬 5秒连贯视频 (HappyHorse 1.1)
+                            </button>
+                        </div>
+
+                        <!-- 提示词输入 -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-slate-300">创意提示词 (Prompt):</label>
+                            <textarea id="pg-prompt" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:outline-none focus:border-brand-500" placeholder="例如：A majestic cyberpunk dragon flying over futuristic Neo Tokyo, neon lights, 2K photorealistic"></textarea>
+                        </div>
+
+                        <!-- 比例与参数 -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs font-medium text-slate-300">画幅比例:</label>
+                                <select id="pg-size" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-slate-200">
+                                    <option value="1:1">1:1 (头像/方图)</option>
+                                    <option value="16:9" selected>16:9 (横屏大片/电影)</option>
+                                    <option value="9:16">9:16 (手机全屏/短视频)</option>
+                                    <option value="4:3">4:3 (标准画幅)</option>
+                                </select>
+                            </div>
+                            <div id="pg-video-opt" class="hidden">
+                                <label class="text-xs font-medium text-slate-300">时长与模型:</label>
+                                <div class="mt-1 text-xs text-slate-400 py-2">
+                                    HappyHorse 1.1 (5秒 / 30积分)
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 参考图设置 (单图或多图) -->
+                        <div id="pg-ref-box" class="space-y-2 hidden">
+                            <label class="text-xs font-medium text-slate-300 flex items-center justify-between">
+                                <span>参考图 URL (单图或多图逗号分隔):</span>
+                                <span class="text-[10px] text-pink-400">支持单帧与多帧参考</span>
+                            </label>
+                            <input type="text" id="pg-ref-images" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2 text-xs text-slate-200" placeholder="https://example.com/ref1.png, https://example.com/ref2.png">
+                        </div>
+
+                        <button onclick="runGeneration()" id="btn-generate" class="w-full py-3 bg-gradient-to-r from-brand-600 via-purple-600 to-pink-600 hover:opacity-90 text-white rounded-xl text-sm font-bold shadow-lg shadow-brand-500/20 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-sparkles"></i> 立即生成
+                        </button>
+                    </div>
+
+                    <!-- 右侧：生成结果预览 -->
+                    <div class="lg:col-span-7 glass rounded-2xl p-6 flex flex-col items-center justify-center min-h-[380px] relative overflow-hidden">
+                        <div id="pg-empty-state" class="text-center space-y-3">
+                            <div class="w-16 h-16 rounded-2xl bg-slate-800/80 mx-auto flex items-center justify-center text-slate-600 text-2xl">
+                                <i class="fa-solid fa-photo-film"></i>
+                            </div>
+                            <div class="text-sm font-medium text-slate-400">等待生成任务下发</div>
+                            <div class="text-xs text-slate-600">生成的 2K 原图或 MP4 视频将在此处实时呈现</div>
+                        </div>
+
+                        <!-- 加载中 -->
+                        <div id="pg-loading-state" class="hidden text-center space-y-4">
+                            <div class="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            <div class="text-sm font-bold text-white" id="pg-loading-text">正在向通义千问调度任务...</div>
+                            <div class="text-xs text-slate-400">2K 原画通常耗时 15-25 秒，视频耗时约 40-70 秒</div>
+                        </div>
+
+                        <!-- 成果输出展示 -->
+                        <div id="pg-result-state" class="hidden w-full h-full flex flex-col items-center space-y-4">
+                            <div id="pg-media-container" class="max-h-[460px] w-full flex items-center justify-center rounded-xl overflow-hidden bg-black/40"></div>
+                            <div class="flex items-center gap-3">
+                                <a id="pg-download-btn" href="#" target="_blank" download class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-xl flex items-center gap-2 transition-colors">
+                                    <i class="fa-solid fa-download"></i> 下载原文件
+                                </a>
+                                <button onclick="copyResultUrl()" class="px-4 py-2 bg-brand-600/20 hover:bg-brand-600/30 text-brand-300 text-xs font-semibold rounded-xl flex items-center gap-2 border border-brand-500/30 transition-colors">
+                                    <i class="fa-solid fa-link"></i> 复制直链
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 视图 4：远程 API 接入中心 -->
+            <section id="view-gateway" class="space-y-6 hidden">
+                <div class="glass rounded-2xl p-6 space-y-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-globe text-cyan-400"></i> 随时随地接入：OpenAI 兼容反代规范
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">
+                            本服务 100% 模拟 OpenAI 标准接口。无论在 Infinite Canvas（无限画板）、WebUI 或外部终端中，均可直接免配置调用！
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-2">
+                            <div class="text-xs text-slate-400 font-medium">统一 Base URL</div>
+                            <div class="flex items-center justify-between bg-black/40 p-2.5 rounded-lg border border-slate-800">
+                                <code class="text-xs font-mono text-cyan-400" id="gw-base-url">http://127.0.0.1:3264/v1</code>
+                                <button onclick="copyText('gw-base-url')" class="text-xs text-slate-400 hover:text-white px-2 py-1"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-2">
+                            <div class="text-xs text-slate-400 font-medium">全局 API Key</div>
+                            <div class="flex items-center justify-between bg-black/40 p-2.5 rounded-lg border border-slate-800">
+                                <code class="text-xs font-mono text-emerald-400" id="gw-api-key">sk-qwen-secret-8888</code>
+                                <button onclick="copyText('gw-api-key')" class="text-xs text-slate-400 hover:text-white px-2 py-1"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 模型映射表 -->
+                    <div class="space-y-2">
+                        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">支持调用的模型标识：</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800/80">
+                                <div class="font-bold text-purple-400 font-mono">qwen-image-3.0</div>
+                                <div class="text-slate-400 mt-1">通义画王 2K 顶级原画生图 (/images/generations)</div>
+                            </div>
+                            <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800/80">
+                                <div class="font-bold text-pink-400 font-mono">happyhorse1.1</div>
+                                <div class="text-slate-400 mt-1">通义画王 5秒 电影级视频生成 (/videos/generations)</div>
+                            </div>
+                            <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-800/80">
+                                <div class="font-bold text-cyan-400 font-mono">qwen3.7-plus</div>
+                                <div class="text-slate-400 mt-1">主站对话与代码推理 (/chat/completions)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let currentMode = 'image';
+        let lastResultUrl = '';
+
+        function switchTab(tab) {
+            ['quota', 'import', 'playground', 'gateway'].forEach(t => {
+                document.getElementById('view-' + t).classList.add('hidden');
+                document.getElementById('tab-btn-' + t).className = 'nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all';
+            });
+            document.getElementById('view-' + tab).classList.remove('hidden');
+            document.getElementById('tab-btn-' + tab).className = 'nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-brand-600 text-white transition-all';
+            if (tab === 'quota') loadAccounts();
+        }
+
+        function setPlaygroundMode(mode) {
+            currentMode = mode;
+            if (mode === 'image') {
+                document.getElementById('pg-mode-img').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white';
+                document.getElementById('pg-mode-video').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white';
+                document.getElementById('pg-video-opt').classList.add('hidden');
+                document.getElementById('pg-ref-box').classList.add('hidden');
+            } else {
+                document.getElementById('pg-mode-video').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-pink-600 text-white';
+                document.getElementById('pg-mode-img').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white';
+                document.getElementById('pg-video-opt').classList.remove('hidden');
+                document.getElementById('pg-ref-box').classList.remove('hidden');
+            }
+        }
+
+        async function loadAccounts() {
+            try {
+                const res = await fetch('/api/management/accounts');
+                const data = await res.json();
+                if (!data.success) return;
+
+                document.getElementById('stat-total-accounts').innerText = data.totalAccounts;
+                document.getElementById('stat-total-2k').innerText = data.summary.total2kImagesPerDay;
+                document.getElementById('stat-total-videos').innerText = data.summary.totalVideosPerDay;
+                document.getElementById('stat-total-chat').innerText = data.summary.totalChatImagesPerDay;
+
+                const tbody = document.getElementById('accounts-table-body');
+                if (!data.accounts.length) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-6 text-slate-500">暂无已入库账号，请前往【批量自动取件】录入</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.accounts.map((a, i) => `
+                    <tr class="hover:bg-slate-800/30 transition-colors">
+                        <td class="py-3 px-4 font-mono font-medium text-white">${a.id}</td>
+                        <td class="py-3 px-4 font-semibold text-purple-400">25 张/天</td>
+                        <td class="py-3 px-4 font-semibold text-pink-400">1 条/天 (HappyHorse)</td>
+                        <td class="py-3 px-4 font-semibold text-cyan-400">40 张/天</td>
+                        <td class="py-3 px-4">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${a.hasStudio ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}">
+                                ${a.hasStudio ? '🟢 2K+视频已激活' : '🔴 未配置'}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to load accounts', err);
+            }
+        }
+
+        async function testSampleCode() {
+            const raw = document.getElementById('import-text').value.trim();
+            if (!raw) {
+                alert('请先在输入框中粘贴包含 client_id 与 refresh_token 的账号行！');
+                return;
+            }
+            const firstLine = raw.split('\n')[0].trim();
+            const parts = firstLine.split('----').map(p => p.trim());
+            if (parts.length < 4) {
+                alert('该行不包含 client_id 与 refresh_token，无法执行微软 Graph API 自动取件！');
+                return;
+            }
+
+            const logBox = document.getElementById('import-log-box');
+            const logContent = document.getElementById('import-log-content');
+            logBox.classList.remove('hidden');
+            logContent.innerHTML = `<div class="text-cyan-400">▶ 正在通过微软 Graph API 连接 ${parts[0]} 的收件箱...</div>`;
+
+            try {
+                const res = await fetch('/api/management/fetch-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id: parts[2], refresh_token: parts[3] })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    logContent.innerHTML += `<div class="text-emerald-400 font-bold">🎉 成功自动收取验证码：<span class="text-xl bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/40 text-emerald-300">${data.code}</span></div>`;
+                } else {
+                    logContent.innerHTML += `<div class="text-amber-400">⚠️ ${data.message}</div>`;
+                }
+            } catch (err) {
+                logContent.innerHTML += `<div class="text-red-400">❌ 取件请求失败: ${err.message}</div>`;
+            }
+        }
+
+        async function submitBatchImport() {
+            const raw = document.getElementById('import-text').value.trim();
+            if (!raw) {
+                alert('请填入账号文本');
+                return;
+            }
+
+            const btn = document.getElementById('btn-import');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> 正在录入...';
+
+            const logBox = document.getElementById('import-log-box');
+            const logContent = document.getElementById('import-log-content');
+            logBox.classList.remove('hidden');
+            logContent.innerHTML = `<div class="text-cyan-400">▶ 正在批量录入账号并校验 Graph API 取件通道...</div>`;
+
+            try {
+                const res = await fetch('/api/management/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ raw_text: raw })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    logContent.innerHTML += `<div class="text-emerald-400 font-bold">✅ ${data.message}</div>`;
+                    data.results.forEach(r => {
+                        logContent.innerHTML += `<div class="text-slate-300 pl-4">• 账号: ${r.email} | 取件通道: ${r.hasGraphApi ? '🟢 微软Graph就绪 (' + r.lastCodeFound + ')' : '🟡 普通密码'}</div>`;
+                    });
+                    loadAccounts();
+                } else {
+                    logContent.innerHTML += `<div class="text-red-400">❌ 导入失败: ${data.error}</div>`;
+                }
+            } catch (err) {
+                logContent.innerHTML += `<div class="text-red-400">❌ 网络错误: ${err.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> 一键自动取件并入库';
+            }
+        }
+
+        async function runGeneration() {
+            const prompt = document.getElementById('pg-prompt').value.trim();
+            if (!prompt) {
+                alert('请输入提示词');
+                return;
+            }
+
+            const size = document.getElementById('pg-size').value;
+            const refImagesInput = document.getElementById('pg-ref-images').value.trim();
+            const refImages = refImagesInput ? refImagesInput.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+            document.getElementById('pg-empty-state').classList.add('hidden');
+            document.getElementById('pg-result-state').classList.add('hidden');
+            document.getElementById('pg-loading-state').classList.remove('hidden');
+
+            const btn = document.getElementById('btn-generate');
+            btn.disabled = true;
+
+            try {
+                if (currentMode === 'image') {
+                    document.getElementById('pg-loading-text').innerText = '正在使用 Qwen-Image 3.0 生成 2048x2048 2K 原画...';
+                    const res = await fetch('/v1/images/generations', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt, size, resolution: '2K' })
+                    });
+                    const data = await res.json();
+                    const url = data.data?.[0]?.url;
+                    if (!url) throw new Error(data.error || '未返回图片 URL');
+                    showResult(url, 'image');
+                } else {
+                    document.getElementById('pg-loading-text').innerText = '正在使用 HappyHorse 1.1 生成 5秒 视频 (支持多参考图)...';
+                    const res = await fetch('/v1/videos/generations', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt, size, duration: 5, model: 'happyhorse1.1', reference_images: refImages })
+                    });
+                    const data = await res.json();
+                    const url = data.data?.[0]?.url;
+                    if (!url) throw new Error(data.error || '未返回视频 URL');
+                    showResult(url, 'video');
+                }
+            } catch (err) {
+                alert('生成失败: ' + err.message);
+                document.getElementById('pg-empty-state').classList.remove('hidden');
+            } finally {
+                document.getElementById('pg-loading-state').classList.add('hidden');
+                btn.disabled = false;
+            }
+        }
+
+        function showResult(url, type) {
+            lastResultUrl = url;
+            const container = document.getElementById('pg-media-container');
+            if (type === 'image') {
+                container.innerHTML = `<img src="${url}" class="max-h-[460px] object-contain rounded-xl shadow-2xl">`;
+            } else {
+                container.innerHTML = `<video src="${url}" controls autoplay loop class="max-h-[460px] object-contain rounded-xl shadow-2xl"></video>`;
+            }
+            document.getElementById('pg-download-btn').href = url;
+            document.getElementById('pg-result-state').classList.remove('hidden');
+        }
+
+        function copyResultUrl() {
+            if (lastResultUrl) {
+                navigator.clipboard.writeText(lastResultUrl);
+                alert('已复制生成文件的直接访问 URL！');
+            }
+        }
+
+        function copyText(elemId) {
+            const text = document.getElementById(elemId).innerText;
+            navigator.clipboard.writeText(text);
+            alert('已复制到剪贴板: ' + text);
+        }
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            loadAccounts();
+            if (window.location.origin) {
+                document.getElementById('gw-base-url').innerText = window.location.origin + '/v1';
+            }
+        });
+    </script>
+</body>
+</html>
