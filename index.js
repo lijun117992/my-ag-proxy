@@ -34,7 +34,7 @@ function toBoolean(value) {
     return ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
 }
 
-const skipAccountMenu = toBoolean(process.env.SKIP_ACCOUNT_MENU) || toBoolean(process.env.NON_INTERACTIVE);
+const skipAccountMenu = true; // 云端与生产网关永远直接进入免交互无感服务模式，通过网页端管理
 
 function ensureNonInteractiveTokens() {
     const tokens = loadTokens();

@@ -25,6 +25,8 @@ EOF
 echo "[CLIProxyAPI] 启动 CLIProxyAPI 内部服务 (Port 8081)..."
 /CLIProxyAPI/CLIProxyAPI --config /CLIProxyAPI/config.yaml &
 
-# 3. 在前台启动 Node.js 超级网关
+# 3. 在前台启动 Node.js 超级网关 (免交互无感模式)
+export NON_INTERACTIVE=1
+export SKIP_ACCOUNT_MENU=1
 export HOST="0.0.0.0"
 exec node /app/index.js
