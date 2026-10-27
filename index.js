@@ -1,10 +1,11 @@
 import express from 'express';
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
 import bodyParser from 'body-parser';
+import { fileURLToPath } from 'url';
 
 import { initBrowser, shutdownBrowser } from './src/browser/browser.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import apiRoutes from './src/api/routes.js';
 import managementRoutes from './src/api/managementRoutes.js';
 import { proxyRequestToUpstream } from './src/api/upstreamProxy.js';
