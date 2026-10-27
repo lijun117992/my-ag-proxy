@@ -1423,7 +1423,7 @@ router.post('/chat/completions', async (req, res) => {
         logInfo(`Получен OpenAI-совместимый запрос${stream ? ' (stream)' : ''}`);
 
         const modelLower1 = (model || '').toLowerCase();
-        if (modelLower1 && (modelLower1.startsWith('gemini') || modelLower1.startsWith('claude') || modelLower1.startsWith('codex') || modelLower1.startsWith('gpt') || modelLower1.startsWith('deepseek'))) {
+        if (modelLower1 && (!modelLower1.startsWith('qwen') || modelLower1.includes('antigravity') || modelLower1.startsWith('gemini') || modelLower1.startsWith('claude') || modelLower1.startsWith('codex') || modelLower1.startsWith('gpt') || modelLower1.startsWith('deepseek'))) {
             logInfo(`Forwarding upstream model ${model} to CLIProxyAPI on 8081`);
             return proxyRequestToUpstream(req, res, 8081);
         }
@@ -1775,7 +1775,7 @@ router.post('/v1/chat/completions', async (req, res) => {
         logInfo(`Получен OpenAI v1 запрос${stream ? ' (stream)' : ''}`);
 
         const modelLower2 = (model || '').toLowerCase();
-        if (modelLower2 && (modelLower2.startsWith('gemini') || modelLower2.startsWith('claude') || modelLower2.startsWith('codex') || modelLower2.startsWith('gpt') || modelLower2.startsWith('deepseek'))) {
+        if (modelLower2 && (!modelLower2.startsWith('qwen') || modelLower2.includes('antigravity') || modelLower2.startsWith('gemini') || modelLower2.startsWith('claude') || modelLower2.startsWith('codex') || modelLower2.startsWith('gpt') || modelLower2.startsWith('deepseek'))) {
             logInfo(`Forwarding upstream v1 model ${model} to CLIProxyAPI on 8081`);
             return proxyRequestToUpstream(req, res, 8081);
         }
