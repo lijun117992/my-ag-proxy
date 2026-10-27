@@ -1,5 +1,16 @@
 # 更新日志 (CHANGELOG)
 
+## [2.3.0] - 2026-10-27
+### 修复与云端部署验证 (Fixes & Live Deploy Verification)
+- **解耦 React Router 与 CPAMC 侧边栏通义千问模块**：
+  - 彻底根除点击【通义千问 (2K/视频)】时被 React Router 的通配符规则 `{ path: '*', element: <Navigate to="/" replace /> }` 拦截回仪表盘首页的问题。
+  - 将导航链接解耦为原生 DOM 无感切换，增加 `MutationObserver` 守护进程与会话状态记忆，保障在 React SPA 异步刷新时主视图始终稳定呈现千问控制台。
+- **修复服务端运行时启动异常**：
+  - 解决 `index.js` 顶部缺失 `import fs from 'fs';` 导致 Render 容器启动抛出 `ReferenceError: fs is not defined` 的崩溃问题。
+- **实测云端全量跑通**：
+  - Render 云端最新镜像已成功构建并转为 `Live` 运行状态；
+  - 验证 `/health` 200 OK、`/management.html` 注入完整、`/api/management/accounts` 正常响应。
+
 ## [2.2.0] - 2026-10-27
 ### 修复与升级 (Fixes & Upgrades)
 - **全面清除俄文报错并实现友好中文反馈**：
