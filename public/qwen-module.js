@@ -19,10 +19,29 @@
                 clearInterval(checkInterval);
                 injectSidebarNav();
                 injectMainModule(mainContent);
-                handleRouteChange();
-                window.addEventListener('hashchange', handleRouteChange);
+
+                // 检查是否有之前激活的状态或 hash 中带有 qwen
+                if (sessionStorage.getItem('cpamc_current_tab') === 'qwen' || (window.location.hash && window.location.hash.includes('qwen'))) {
+                    if (window.location.hash && window.location.hash.includes('qwen')) {
+                        try {
+                            history.replaceState(null, '', window.location.pathname + window.location.search);
+                        } catch (e) {}
+                    }
+                    setTimeout(activateQwenView, 100);
+                }
+
+                // 启动 DOM 守护（防止 React SPA 异步渲染抹除挂载点）
+                startDomGuardian();
             }
-        }, 300);
+        }, 200);
+
+        // 监听其他原生侧边栏菜单的点击，平滑切回 CPAMC 原生视图
+        document.addEventListener('click', (e) => {
+            const targetNav = e.target.closest('.nav-item, nav a, aside a');
+            if (targetNav && targetNav.id !== 'nav-item-qwen') {
+                deactivateQwenView();
+            }
+        }, true);
     }
 
     // 2. 将“通义千问”注入到 CPAMC 原生侧边栏菜单中
@@ -38,7 +57,7 @@
 
         const navLink = document.createElement('a');
         navLink.id = 'nav-item-qwen';
-        navLink.href = '#/qwen';
+        navLink.href = 'javascript:void(0);';
         navLink.className = 'nav-item qwen-nav-item';
         navLink.setAttribute('aria-label', '通义千问');
         navLink.innerHTML = `
@@ -54,7 +73,9 @@
         `;
 
         navLink.addEventListener('click', (e) => {
-            window.location.hash = '#/qwen';
+            e.preventDefault();
+            e.stopPropagation();
+            activateQwenView();
         });
 
         targetAnchor.parentElement.insertBefore(navLink, targetAnchor.nextSibling);
@@ -330,38 +351,102 @@
         console.log('[QwenModule] ✅ 已将通义千问模块面板注入 CPAMC 主视窗！');
     }
 
-    // 4. 处理路由变化（匹配 #/qwen）
-    function handleRouteChange() {
-        const hash = window.location.hash || '';
+    // 4. 激活与关闭通义千问面板
+    function activateQwenView() {
+        sessionStorage.setItem('cpamc_current_tab', 'qwen');
         const qwenNav = document.getElementById('nav-item-qwen');
         const mainContent = document.querySelector('main.main-content, main');
 
-        if (!mainContent || !qwenRoot) return;
-
-        if (hash.startsWith('#/qwen')) {
-            // 激活通义千问面板，隐藏 CPAMC 原生视图
-            if (qwenNav) qwenNav.classList.add('active');
-            
-            Array.from(mainContent.children).forEach(child => {
-                if (child !== qwenRoot) {
-                    child.style.display = 'none';
+        if (qwenNav) {
+            document.querySelectorAll('.nav-item').forEach(el => {
+                if (el !== qwenNav) {
+                    el.classList.remove('active');
+                    el.removeAttribute('aria-current');
                 }
             });
+            qwenNav.classList.add('active');
+            qwenNav.setAttribute('aria-current', 'page');
+        }
 
-            qwenRoot.classList.add('active');
-            window.qwenLoadAccounts();
-            window.qwenCheckAuths();
-        } else {
-            // 切回原生 CPAMC 视图
-            if (qwenNav) qwenNav.classList.remove('active');
-            qwenRoot.classList.remove('active');
-
+        if (mainContent && qwenRoot) {
+            if (!mainContent.contains(qwenRoot)) {
+                mainContent.appendChild(qwenRoot);
+            }
             Array.from(mainContent.children).forEach(child => {
                 if (child !== qwenRoot) {
-                    child.style.display = '';
+                    child.style.setProperty('display', 'none', 'important');
+                }
+            });
+            qwenRoot.style.setProperty('display', 'block', 'important');
+            qwenRoot.classList.add('active');
+        }
+
+        if (window.qwenLoadAccounts) window.qwenLoadAccounts();
+        if (window.qwenCheckAuths) window.qwenCheckAuths();
+    }
+
+    function deactivateQwenView() {
+        sessionStorage.removeItem('cpamc_current_tab');
+        const qwenNav = document.getElementById('nav-item-qwen');
+        const mainContent = document.querySelector('main.main-content, main');
+
+        if (qwenNav) {
+            qwenNav.classList.remove('active');
+            qwenNav.removeAttribute('aria-current');
+        }
+
+        if (qwenRoot) {
+            qwenRoot.style.setProperty('display', 'none', 'important');
+            qwenRoot.classList.remove('active');
+        }
+
+        if (mainContent) {
+            Array.from(mainContent.children).forEach(child => {
+                if (child !== qwenRoot) {
+                    child.style.removeProperty('display');
                 }
             });
         }
+    }
+
+    // 守护进程：防止 React SPA 重新渲染抹除挂载点或覆盖 display
+    function startDomGuardian() {
+        let isSyncing = false;
+        const observer = new MutationObserver(() => {
+            if (isSyncing) return;
+            injectSidebarNav();
+
+            if (sessionStorage.getItem('cpamc_current_tab') === 'qwen') {
+                isSyncing = true;
+                try {
+                    const mainContent = document.querySelector('main.main-content, main');
+                    if (mainContent && qwenRoot) {
+                        if (!mainContent.contains(qwenRoot)) {
+                            mainContent.appendChild(qwenRoot);
+                        }
+                        Array.from(mainContent.children).forEach(child => {
+                            if (child !== qwenRoot && child.style.display !== 'none') {
+                                child.style.setProperty('display', 'none', 'important');
+                            }
+                        });
+                        if (qwenRoot.style.display !== 'block') {
+                            qwenRoot.style.setProperty('display', 'block', 'important');
+                        }
+                    }
+                    const qNav = document.getElementById('nav-item-qwen');
+                    if (qNav && !qNav.classList.contains('active')) {
+                        document.querySelectorAll('.nav-item').forEach(el => {
+                            if (el !== qNav) el.classList.remove('active');
+                        });
+                        qNav.classList.add('active');
+                    }
+                } finally {
+                    isSyncing = false;
+                }
+            }
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
     }
 
     // 5. 交互方法暴露给 window
