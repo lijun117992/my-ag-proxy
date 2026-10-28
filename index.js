@@ -158,9 +158,9 @@ app.get(['/qwen', '/qwen.html'], (req, res) => {
     return res.sendFile(path.resolve(__dirname, 'public', 'qwen.html'));
 });
 
-// 唯一网页入口：无论访问根路径 /、/management.html、还是 /cpamc，全部统一呈现植入千问模块的原生 CPAMC 页面！
+// 唯一网页入口：无论访问根路径 /、/management.html、还是 /cpamc，全部直接透传 100% 官方原生 CPAMC 页面，零脚本注入
 app.get(['/', '/management.html', '/cpamc'], (req, res) => {
-    return serveInjectedManagementHtml(req, res);
+    return proxyRequestToUpstream(req, res, 8081, '/management.html');
 });
 
 // 兜底全量反向代理：所有未被拦截的请求（包括 CPAMC 的 /v8、/v0、/assets、/oauth 等）
