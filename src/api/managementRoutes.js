@@ -184,6 +184,16 @@ router.post('/qwen-credential', (req, res) => {
     });
 });
 
+// 3.1 删除单个通义千问账号
+router.delete('/account/:id', (req, res) => {
+    const { id } = req.params;
+    const studios = loadJson(STUDIO_FILE, []).filter(s => s.id !== id && s.name !== id);
+    const tokens = loadJson(TOKENS_FILE, []).filter(t => t.id !== id);
+    saveJson(STUDIO_FILE, studios);
+    saveJson(TOKENS_FILE, tokens);
+    res.json({ success: true, message: `账号【${id}】已成功从账号池中移除。` });
+});
+
 // 4. 一键配置并保存 DashScope (阿里云百炼) 密钥
 router.post('/dashscope-key', (req, res) => {
     const { api_key } = req.body;

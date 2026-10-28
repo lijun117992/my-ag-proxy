@@ -155,10 +155,11 @@
                                     <th>对话通道权限</th>
                                     <th>Cookie 挂载</th>
                                     <th>状态</th>
+                                    <th>操作</th>
                                 </tr>
                             </thead>
                             <tbody id="qwen-accounts-table-body">
-                                <tr><td colspan="5" style="text-align:center;color:var(--text-tertiary);padding:24px;">正在读取账号池...</td></tr>
+                                <tr><td colspan="6" style="text-align:center;color:var(--text-tertiary);padding:24px;">正在读取账号池...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -502,7 +503,7 @@
 
                 const tbody = document.getElementById('qwen-accounts-table-body');
                 if (!data.accounts || data.accounts.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-tertiary);padding:24px;">暂无挂载账号，请前往【账号录入与授权】中录入 Cookie 或百炼 Key</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-tertiary);padding:24px;">暂无挂载账号，请前往【账号录入与授权】中录入 Cookie 或百炼 Key</td></tr>';
                 } else {
                     tbody.innerHTML = data.accounts.map(acc => `
                         <tr>
@@ -511,12 +512,29 @@
                             <td>${acc.hasChat ? '<span style="color:#10b981;">🟢 主站对话就绪</span>' : '<span style="color:var(--text-tertiary);">⚪ 未配置</span>'}</td>
                             <td>${acc.hasCookies ? '<span style="color:#10b981;">🟢 Cookie 已挂载</span>' : '<span style="color:var(--text-tertiary);">⚪ 无</span>'}</td>
                             <td><span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;background:rgba(16,185,129,0.12);color:#10b981;">正常服务</span></td>
+                            <td><button onclick="window.qwenDeleteAccount('${acc.id}')" style="background:transparent;border:1px solid #ef4444;color:#ef4444;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;">移除</button></td>
                         </tr>
                     `).join('');
                 }
             }
         } catch (e) {
             console.error('[QwenModule] 加载账号失败:', e);
+        }
+    };
+
+    window.qwenDeleteAccount = async function (id) {
+        if (!confirm(`确定要从账号池中移除账号【${id}】吗？`)) return;
+        try {
+            const res = await fetch(`/api/management/account/${encodeURIComponent(id)}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                window.qwenLoadAccounts();
+            } else {
+                alert('移除失败: ' + (data.error || '未知错误'));
+            }
+        } catch (e) {
+            alert('请求失败: ' + e.message);
         }
     };
 
