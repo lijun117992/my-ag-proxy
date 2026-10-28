@@ -153,6 +153,11 @@ async function serveInjectedManagementHtml(req, res) {
     }
 }
 
+// 独立通义千问控制台入口：完全独立页面，0 干扰 CPAMC 与 Antigravity
+app.get(['/qwen', '/qwen.html'], (req, res) => {
+    return res.sendFile(path.resolve(__dirname, 'public', 'qwen.html'));
+});
+
 // 唯一网页入口：无论访问根路径 /、/management.html、还是 /cpamc，全部统一呈现植入千问模块的原生 CPAMC 页面！
 app.get(['/', '/management.html', '/cpamc'], (req, res) => {
     return serveInjectedManagementHtml(req, res);

@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通义千问 Creative Studio - 独立控制台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 500: '#10b981', 600: '#059669', 700: '#047857' },
+                        dark: { 800: '#1e293b', 900: '#0f172a', 950: '#020617' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .gradient-text { background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="bg-dark-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- 顶部导航栏 -->
+    <header class="glass sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between border-b border-slate-800">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                <i class="fa-solid fa-wand-magic-sparkles text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-base font-bold gradient-text tracking-tight">通义千问 Creative Studio</h1>
+                <p class="text-xs text-slate-400">独立模型中心 · 2K 原画 (2048x2048) & HappyHorse 1.1 电影生视频</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                云端反代就绪
+            </span>
+            <a href="/management.html" class="px-3.5 py-1.5 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-2 border border-slate-700 shadow-sm">
+                <i class="fa-solid fa-arrow-left text-brand-400"></i> 返回 Antigravity 控制台
+            </a>
+        </div>
+    </header>
+
+    <!-- 主布局 -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- 左侧菜单 -->
+        <aside class="w-64 glass border-r border-slate-800 p-4 flex flex-col gap-1.5 hidden md:flex">
+            <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">模型与账号管理</div>
+            <button onclick="switchTab('quota')" id="tab-btn-quota" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium bg-brand-600 text-white transition-all shadow-md shadow-brand-500/20">
+                <i class="fa-solid fa-chart-pie w-5 text-center"></i> 配额与账号池
+            </button>
+            <button onclick="switchTab('import')" id="tab-btn-import" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
+                <i class="fa-solid fa-key w-5 text-center"></i> 凭证录入与自动导入
+            </button>
+            <button onclick="switchTab('playground')" id="tab-btn-playground" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
+                <i class="fa-solid fa-clapperboard w-5 text-center"></i> 2K生图 & 视频试炼场
+            </button>
+            <button onclick="switchTab('backup')" id="tab-btn-backup" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
+                <i class="fa-solid fa-shield-halved w-5 text-center"></i> 凭证永久备份 (防丢)
+            </button>
+            <button onclick="switchTab('gateway')" id="tab-btn-gateway" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
+                <i class="fa-solid fa-network-wired w-5 text-center"></i> 远程 API 接入中心
+            </button>
+
+            <div class="mt-auto pt-4 border-t border-slate-800">
+                <a href="/management.html" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-purple-300 hover:text-white hover:bg-purple-950/40 border border-purple-500/20 transition-all">
+                    <i class="fa-solid fa-robot w-5 text-center"></i> 返回 Antigravity 控制台
+                </a>
+            </div>
+        </aside>
+
+        <!-- 内容区域 -->
+        <main class="flex-1 overflow-y-auto p-6 space-y-6">
+            <!-- 视图 1：配额与账号池概览 -->
+            <section id="view-quota" class="space-y-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass p-5 rounded-2xl border-l-4 border-l-emerald-500">
+                        <div class="text-slate-400 text-xs font-medium uppercase">已挂载活跃账号</div>
+                        <div class="text-3xl font-extrabold text-white mt-1" id="stat-total-accounts">-</div>
+                        <div class="text-xs text-emerald-400 mt-2 flex items-center gap-1">
+                            <i class="fa-solid fa-users"></i> 自动轮询负载均衡
+                        </div>
+                    </div>
+                    <div class="glass p-5 rounded-2xl border-l-4 border-l-purple-500">
+                        <div class="text-slate-400 text-xs font-medium uppercase">每日 2K 顶级画王生图</div>
+                        <div class="text-3xl font-extrabold text-purple-400 mt-1" id="stat-total-2k">-</div>
+                        <div class="text-xs text-slate-400 mt-2">单号 25 张 / 2048x2048 原画</div>
+                    </div>
+                    <div class="glass p-5 rounded-2xl border-l-4 border-l-pink-500">
+                        <div class="text-slate-400 text-xs font-medium uppercase">每日 HappyHorse 视频</div>
+                        <div class="text-3xl font-extrabold text-pink-400 mt-1" id="stat-total-videos">-</div>
+                        <div class="text-xs text-slate-400 mt-2">单号 1 条 / 5秒电影级连贯动作</div>
+                    </div>
+                    <div class="glass p-5 rounded-2xl border-l-4 border-l-cyan-500">
+                        <div class="text-slate-400 text-xs font-medium uppercase">DashScope 官方引擎</div>
+                        <div class="text-2xl font-extrabold text-cyan-400 mt-1" id="stat-dashscope">检测中...</div>
+                        <div class="text-xs text-slate-400 mt-2">阿里云百炼 API 直连备灾</div>
+                    </div>
+                </div>
+
+                <!-- 账号列表面板 -->
+                <div class="glass rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-layer-group text-brand-500"></i> 当前账号池状态清单
+                        </h2>
+                        <button onclick="loadAccounts()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate-right"></i> 刷新数据
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-300">
+                            <thead class="text-xs uppercase bg-slate-800/50 text-slate-400 border-b border-slate-700">
+                                <tr>
+                                    <th class="py-3 px-4">账号标识 / 邮箱</th>
+                                    <th class="py-3 px-4">2K 画王与视频权限</th>
+                                    <th class="py-3 px-4">对话通道权限</th>
+                                    <th class="py-3 px-4">Cookie 挂载</th>
+                                    <th class="py-3 px-4">状态</th>
+                                    <th class="py-3 px-4">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accounts-table-body" class="divide-y divide-slate-800">
+                                <tr><td colspan="6" class="text-center py-6 text-slate-500">正在读取账号池状态...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 视图 2：凭证录入与自动导入 -->
+            <section id="view-import" class="space-y-6 hidden">
+                <!-- 方式一：直接录入 Cookie / Token -->
+                <div class="glass rounded-2xl p-6 space-y-4">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-emerald-400"></i> 方式一：直接录入通义千问 Cookie / Token
+                    </h2>
+                    <p class="text-xs text-slate-400">
+                        在浏览器登录 <a href="https://create.qwen.com" target="_blank" class="text-emerald-400 underline">create.qwen.com</a>，按 F12 在控制台执行 <code>document.cookie</code> 复制整串 Cookie 粘贴到下方，一键保存并激活：
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">账号标识 / 备注名：</label>
+                            <input id="cred-name" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500" placeholder="例如：千问主号 或 我的邮箱">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">认证 Token (可选 JWT)：</label>
+                            <input id="cred-token" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500" placeholder="选填，从 Authorization 提取">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-1">通义千问完整 Cookie 字符串：</label>
+                        <textarea id="cred-cookie" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand-500" placeholder="粘贴完整的 Cookie，例如：_qw_...; refresh_token=eyJ...;"></textarea>
+                    </div>
+                    <button onclick="submitCredential()" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-brand-500/20">
+                        💾 立即保存并激活该账号
+                    </button>
+                </div>
+
+                <!-- 方式二：配置阿里云百炼 Key -->
+                <div class="glass rounded-2xl p-6 space-y-4">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-gem text-cyan-400"></i> 方式二：配置阿里云百炼 (DashScope) 官方密钥
+                    </h2>
+                    <p class="text-xs text-slate-400">
+                        阿里云百炼新开通账号拥有大量免费生图额度。录入 API Key 后，系统自动直连官方旗舰生图通道，彻底免维护、永不掉线：
+                    </p>
+                    <div class="flex gap-3">
+                        <input id="dashscope-key-input" type="text" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand-500" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                        <button onclick="submitDashscopeKey()" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-cyan-500/20">
+                            💾 保存百炼密钥
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 方式三：微软 Outlook 自动收码导入 -->
+                <div class="glass rounded-2xl p-6 space-y-4">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-envelope-open-text text-amber-400"></i> 方式三：微软 Outlook 自动取件 & 批量导入
+                    </h2>
+                    <p class="text-xs text-slate-400">
+                        粘贴包含 client_id 与 refresh_token 的账号行，系统直连微软 Graph API 自动收取 6 位验证码：
+                    </p>
+                    <textarea id="import-text" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand-500" placeholder="账号格式（一行一个）：&#10;邮箱----密码----client_id----refresh_token"></textarea>
+                    <div class="flex gap-2">
+                        <button onclick="testSampleCode()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition-colors">
+                            <i class="fa-solid fa-envelope"></i> 测试首行自动取件
+                        </button>
+                        <button onclick="submitBatchImport()" id="btn-import" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-brand-500/20 transition-all">
+                            一键批量录入
+                        </button>
+                    </div>
+                    <div id="import-log-box" class="hidden bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono space-y-1">
+                        <div class="text-slate-400 font-bold mb-1">执行结果：</div>
+                        <div id="import-log-content" class="text-slate-300 space-y-1"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 视图 3：2K 生图 & 视频试炼场 -->
+            <section id="view-playground" class="space-y-6 hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div class="lg:col-span-5 glass rounded-2xl p-6 space-y-4">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-brand-500"></i> 创作参数配置
+                        </h2>
+                        
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">生成模式：</label>
+                            <div class="flex gap-2 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                                <button onclick="setPlaygroundMode('image')" id="pg-mode-img" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white transition-all">
+                                    🎨 2K 画王原画
+                                </button>
+                                <button onclick="setPlaygroundMode('video')" id="pg-mode-video" class="flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">
+                                    🎬 5秒电影视频
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">提示词 (Prompt)：</label>
+                            <textarea id="pg-prompt" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-brand-500" placeholder="例如：超高清写实赛博朋克机械黑猫，霓虹雨夜街道，2K电影光影"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">画幅比例：</label>
+                            <select id="pg-size" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                                <option value="1:1" selected>1:1 正方形 (2048x2048 原画)</option>
+                                <option value="16:9">16:9 宽屏风光 (电影壁纸)</option>
+                                <option value="9:16">9:16 竖屏短视频 (手机全屏)</option>
+                                <option value="4:3">4:3 经典摄影画幅</option>
+                                <option value="3:4">3:4 经典人像立绘</option>
+                            </select>
+                        </div>
+
+                        <div id="pg-ref-box" class="hidden">
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">参考图 URL (选填)：</label>
+                            <input id="pg-ref-images" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500" placeholder="多个 URL 逗号隔开">
+                        </div>
+
+                        <button onclick="runGeneration()" id="btn-generate" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-brand-500/20 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-sparkles"></i> 立即生成
+                        </button>
+                    </div>
+
+                    <div class="lg:col-span-7 glass rounded-2xl p-6 flex flex-col items-center justify-center min-h-[420px]">
+                        <div id="pg-empty-state" class="text-center space-y-3 py-12">
+                            <div class="w-16 h-16 rounded-full bg-slate-800/80 flex items-center justify-center mx-auto text-slate-500 text-2xl">
+                                <i class="fa-regular fa-image"></i>
+                            </div>
+                            <div class="text-sm font-medium text-slate-400">等待生成任务</div>
+                            <p class="text-xs text-slate-500 max-w-sm">生成的 2K 原画 (2048x2048) 或 MP4 视频将在此处呈现</p>
+                        </div>
+
+                        <div id="pg-loading-state" class="hidden text-center space-y-4 py-12">
+                            <div class="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            <div class="text-sm font-semibold text-slate-200" id="pg-loading-text">正在向通义云端调度任务...</div>
+                            <p class="text-xs text-slate-500">2K 原画通常耗时 15-25 秒，视频耗时 40-70 秒</p>
+                        </div>
+
+                        <div id="pg-result-state" class="hidden w-full space-y-4 flex flex-col items-center">
+                            <div id="pg-media-container" class="w-full flex justify-center bg-black/40 rounded-xl overflow-hidden p-2"></div>
+                            <div class="flex gap-3">
+                                <a id="pg-download-btn" href="#" target="_blank" download class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition-all">
+                                    <i class="fa-solid fa-download"></i> 下载原文件
+                                </a>
+                                <button onclick="copyResultUrl()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition-all">
+                                    <i class="fa-solid fa-link"></i> 复制文件直链
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 视图 4：凭证永久备份 -->
+            <section id="view-backup" class="space-y-6 hidden">
+                <div class="glass rounded-2xl p-6 space-y-4">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-emerald-400"></i> Render 凭证持久化与防丢失机制
+                    </h2>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Render 免费实例的磁盘属于<b>临时容器层</b>。当 Render 云端重新构建或重启容器时，临时文件会被重置。<br>
+                        <b>彻底告别重置的方法：</b>点击下方按钮生成持久化备份，将其配置到 Render 的 <code>Environment Variables</code>，以后云端无论如何重启更新，所有 Antigravity / 通义千问凭据永久生效并开机自启自动还原！
+                    </p>
+                    <button onclick="generateBackup()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/20">
+                        📋 一键导出全量持久化环境变量 (Render 专用)
+                    </button>
+                    <div id="backup-output-box" class="hidden space-y-2 pt-2">
+                        <label class="text-xs font-semibold text-slate-300 block">将以下 Base64 字符串配置到 Render 后台 Environment -> Key 填 <code>RENDER_AUTHS_BACKUP</code>：</label>
+                        <textarea id="backup-output" rows="4" readonly class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 视图 5：远程 API 接入中心 -->
+            <section id="view-gateway" class="space-y-6 hidden">
+                <div class="glass rounded-2xl p-6 space-y-4">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired text-brand-500"></i> 全局远程 API 接入参数
+                    </h2>
+                    <p class="text-xs text-slate-400">
+                        可以在全球任何客户端（NextChat、Cherry Studio、Python、本地工作流等）直接调用：
+                    </p>
+                    <div class="space-y-3">
+                        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-slate-500">Base URL (接口基础地址)</div>
+                                <div class="text-sm font-mono text-emerald-400 font-bold" id="gw-base-url">https://my-ag-proxy.onrender.com/v1</div>
+                            </div>
+                            <button onclick="copyText('gw-base-url')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs">复制</button>
+                        </div>
+                        <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                            <div>
+                                <div class="text-xs text-slate-500">API Key (密钥)</div>
+                                <div class="text-sm font-mono text-slate-200 font-bold" id="gw-key">sk-antigravity-secret-8888</div>
+                            </div>
+                            <button onclick="copyText('gw-key')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs">复制</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        let currentMode = 'image';
+        let lastResultUrl = '';
+
+        function switchTab(tab) {
+            ['quota', 'import', 'playground', 'backup', 'gateway'].forEach(t => {
+                const view = document.getElementById('view-' + t);
+                const btn = document.getElementById('tab-btn-' + t);
+                if (view) view.classList.add('hidden');
+                if (btn) btn.className = 'nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all';
+            });
+            const targetView = document.getElementById('view-' + tab);
+            const targetBtn = document.getElementById('tab-btn-' + tab);
+            if (targetView) targetView.classList.remove('hidden');
+            if (targetBtn) targetBtn.className = 'nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium bg-brand-600 text-white transition-all shadow-md shadow-brand-500/20';
+            if (tab === 'quota') loadAccounts();
+        }
+
+        function setPlaygroundMode(mode) {
+            currentMode = mode;
+            if (mode === 'image') {
+                document.getElementById('pg-mode-img').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white transition-all';
+                document.getElementById('pg-mode-video').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+                document.getElementById('pg-ref-box').classList.add('hidden');
+            } else {
+                document.getElementById('pg-mode-video').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white transition-all';
+                document.getElementById('pg-mode-img').className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all';
+                document.getElementById('pg-ref-box').classList.remove('hidden');
+            }
+        }
+
+        async function loadAccounts() {
+            try {
+                const res = await fetch('/api/management/accounts');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('stat-total-accounts').innerText = data.totalAccounts || 0;
+                    document.getElementById('stat-total-2k').innerText = data.summary?.total2kImagesPerDay || 0;
+                    document.getElementById('stat-total-videos').innerText = data.summary?.totalVideosPerDay || 0;
+                    
+                    const dashEl = document.getElementById('stat-dashscope');
+                    if (dashEl) {
+                        dashEl.innerHTML = data.dashscopeConfigured 
+                            ? '<span class="text-emerald-400 text-xl font-bold">🟢 已配置 (免登)</span>' 
+                            : '<span class="text-slate-500 text-lg">⚪ 未配置</span>';
+                    }
+
+                    const tbody = document.getElementById('accounts-table-body');
+                    if (!data.accounts || data.accounts.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500">暂无挂载账号，请在【凭证录入与自动导入】中添加 Cookie 或百炼 Key</td></tr>';
+                    } else {
+                        tbody.innerHTML = data.accounts.map(acc => `
+                            <tr class="hover:bg-slate-800/30 transition-colors">
+                                <td class="py-3 px-4 font-mono font-medium text-slate-200">${acc.name || acc.id}</td>
+                                <td class="py-3 px-4">${acc.hasStudio ? '<span class="text-emerald-400 font-semibold">🟢 2K 画王已激活</span>' : '<span class="text-slate-500">⚪ 未激活</span>'}</td>
+                                <td class="py-3 px-4">${acc.hasChat ? '<span class="text-emerald-400 font-semibold">🟢 对话就绪</span>' : '<span class="text-slate-500">⚪ 未激活</span>'}</td>
+                                <td class="py-3 px-4">${acc.hasCookies ? '<span class="text-emerald-400">🟢 Cookie 已挂载</span>' : '<span class="text-slate-500">⚪ 无</span>'}</td>
+                                <td class="py-3 px-4"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400">正常服务</span></td>
+                                <td class="py-3 px-4"><button onclick="deleteAccount('${acc.id}')" class="px-2.5 py-1 text-xs border border-red-500/40 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">移除</button></td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (err) {
+                console.error('加载账号失败:', err);
+            }
+        }
+
+        async function deleteAccount(id) {
+            if (!confirm(`确定要从账号池中移除账号【${id}】吗？`)) return;
+            try {
+                const res = await fetch(`/api/management/account/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    loadAccounts();
+                } else {
+                    alert('移除失败: ' + (data.error || '未知错误'));
+                }
+            } catch (e) {
+                alert('请求异常: ' + e.message);
+            }
+        }
+
+        async function submitCredential() {
+            const name = document.getElementById('cred-name').value.trim();
+            const cookies = document.getElementById('cred-cookie').value.trim();
+            const token = document.getElementById('cred-token').value.trim();
+
+            if (!cookies && !token) {
+                alert('请至少填入通义千问 Cookie 或 Token 中的一项！');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/management/qwen-credential', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, cookies, token })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('cred-cookie').value = '';
+                    document.getElementById('cred-token').value = '';
+                    switchTab('quota');
+                } else {
+                    alert('保存失败: ' + (data.error || '未知错误'));
+                }
+            } catch (e) {
+                alert('请求异常: ' + e.message);
+            }
+        }
+
+        async function submitDashscopeKey() {
+            const key = document.getElementById('dashscope-key-input').value.trim();
+            if (!key) {
+                alert('请输入有效 API Key (sk-...)');
+                return;
+            }
+            try {
+                const res = await fetch('/api/management/dashscope-key', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ api_key: key })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    loadAccounts();
+                } else {
+                    alert('保存失败: ' + (data.error || '未知错误'));
+                }
+            } catch (e) {
+                alert('请求失败: ' + e.message);
+            }
+        }
+
+        async function testSampleCode() {
+            const raw = document.getElementById('import-text').value.trim();
+            if (!raw) {
+                alert('请先在输入框中粘贴包含 client_id 与 refresh_token 的账号行！');
+                return;
+            }
+            const firstLine = raw.split('\n')[0].trim();
+            const parts = firstLine.split('----').map(p => p.trim());
+            if (parts.length < 4) {
+                alert('该行不包含 client_id 与 refresh_token，无法执行微软 Graph API 自动取件！');
+                return;
+            }
+
+            const logBox = document.getElementById('import-log-box');
+            const logContent = document.getElementById('import-log-content');
+            logBox.classList.remove('hidden');
+            logContent.innerHTML = `<div class="text-cyan-400">▶ 正在通过微软 Graph API 连接 ${parts[0]} 的收件箱...</div>`;
+
+            try {
+                const res = await fetch('/api/management/fetch-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_id: parts[2], refresh_token: parts[3] })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    logContent.innerHTML += `<div class="text-emerald-400 font-bold">🎉 成功自动收取验证码：<span class="text-xl bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/40 text-emerald-300">${data.code}</span></div>`;
+                } else {
+                    logContent.innerHTML += `<div class="text-amber-400">⚠️ ${data.message}</div>`;
+                }
+            } catch (err) {
+                logContent.innerHTML += `<div class="text-red-400">❌ 取件请求失败: ${err.message}</div>`;
+            }
+        }
+
+        async function submitBatchImport() {
+            const raw = document.getElementById('import-text').value.trim();
+            if (!raw) {
+                alert('请填入账号文本');
+                return;
+            }
+
+            const btn = document.getElementById('btn-import');
+            btn.disabled = true;
+            btn.innerText = '正在录入...';
+
+            const logBox = document.getElementById('import-log-box');
+            const logContent = document.getElementById('import-log-content');
+            logBox.classList.remove('hidden');
+            logContent.innerHTML = `<div class="text-cyan-400">▶ 正在批量录入账号并校验 Graph API 取件通道...</div>`;
+
+            try {
+                const res = await fetch('/api/management/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ raw_text: raw })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    logContent.innerHTML += `<div class="text-emerald-400 font-bold">✅ ${data.message}</div>`;
+                    data.results.forEach(r => {
+                        logContent.innerHTML += `<div class="text-slate-300 pl-4">• 账号: ${r.email} | 通道: ${r.hasGraphApi ? '🟢 微软Graph就绪 (' + r.lastCodeFound + ')' : '🟡 普通密码'}</div>`;
+                    });
+                    loadAccounts();
+                } else {
+                    logContent.innerHTML += `<div class="text-red-400">❌ 导入失败: ${data.error}</div>`;
+                }
+            } catch (err) {
+                logContent.innerHTML += `<div class="text-red-400">❌ 网络错误: ${err.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerText = '一键批量录入';
+            }
+        }
+
+        async function generateBackup() {
+            try {
+                const res = await fetch('/api/management/auths-backup');
+                const data = await res.json();
+                if (data.success && data.backupBase64) {
+                    document.getElementById('backup-output').value = data.backupBase64;
+                    document.getElementById('backup-output-box').classList.remove('hidden');
+                    navigator.clipboard.writeText(data.backupBase64);
+                    alert('已复制持久化 Base64 到剪贴板！请前往 Render 仪表盘 Environment Variables 新建 RENDER_AUTHS_BACKUP 并粘贴保存。');
+                } else {
+                    alert('当前凭据池暂无凭据可备份，请先完成授权或录入！');
+                }
+            } catch (e) {
+                alert('导出备份失败: ' + e.message);
+            }
+        }
+
+        async function runGeneration() {
+            const prompt = document.getElementById('pg-prompt').value.trim();
+            if (!prompt) {
+                alert('请输入提示词');
+                return;
+            }
+
+            const size = document.getElementById('pg-size').value;
+            const refImagesInput = document.getElementById('pg-ref-images').value.trim();
+            const refImages = refImagesInput ? refImagesInput.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+            document.getElementById('pg-empty-state').classList.add('hidden');
+            document.getElementById('pg-result-state').classList.add('hidden');
+            document.getElementById('pg-loading-state').classList.remove('hidden');
+
+            const btn = document.getElementById('btn-generate');
+            btn.disabled = true;
+
+            try {
+                if (currentMode === 'image') {
+                    document.getElementById('pg-loading-text').innerText = '正在生成 2048x2048 2K 原画...';
+                    const res = await fetch('/v1/images/generations', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt, size, resolution: '2K' })
+                    });
+                    const data = await res.json();
+                    const url = data.data?.[0]?.url;
+                    if (!url) throw new Error(data.error?.message || data.error || '未返回图片 URL');
+                    showResult(url, 'image');
+                } else {
+                    document.getElementById('pg-loading-text').innerText = '正在生成 HappyHorse 1.1 5秒 视频...';
+                    const res = await fetch('/v1/videos/generations', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt, size, duration: 5, model: 'happyhorse1.1', reference_images: refImages })
+                    });
+                    const data = await res.json();
+                    const url = data.data?.[0]?.url;
+                    if (!url) throw new Error(data.error?.message || data.error || '未返回视频 URL');
+                    showResult(url, 'video');
+                }
+            } catch (err) {
+                alert('生成失败: ' + err.message);
+                document.getElementById('pg-empty-state').classList.remove('hidden');
+            } finally {
+                document.getElementById('pg-loading-state').classList.add('hidden');
+                btn.disabled = false;
+            }
+        }
+
+        function showResult(url, type) {
+            lastResultUrl = url;
+            const container = document.getElementById('pg-media-container');
+            if (type === 'image') {
+                container.innerHTML = `<img src="${url}" class="max-h-[460px] object-contain rounded-xl shadow-2xl">`;
+            } else {
+                container.innerHTML = `<video src="${url}" controls autoplay loop class="max-h-[460px] object-contain rounded-xl shadow-2xl"></video>`;
+            }
+            document.getElementById('pg-download-btn').href = url;
+            document.getElementById('pg-result-state').classList.remove('hidden');
+        }
+
+        function copyResultUrl() {
+            if (lastResultUrl) {
+                navigator.clipboard.writeText(lastResultUrl);
+                alert('已复制生成文件的直接访问 URL！');
+            }
+        }
+
+        function copyText(elemId) {
+            const text = document.getElementById(elemId).innerText;
+            navigator.clipboard.writeText(text);
+            alert('已复制到剪贴板: ' + text);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadAccounts();
+            if (window.location.origin) {
+                document.getElementById('gw-base-url').innerText = window.location.origin + '/v1';
+            }
+        });
+    </script>
+</body>
+</html>
