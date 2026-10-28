@@ -10,17 +10,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SESSION_DIR = path.resolve(__dirname, '..', '..', 'session');
 const STUDIO_FILE = path.join(SESSION_DIR, 'studio_accounts.json');
 const TOKENS_FILE = path.join(SESSION_DIR, 'tokens.json');
-const DASHSCOPE_FILE = path.join(SESSION_DIR, 'dashscope.json');
-
-// 启动时自动检查 dashscope.json 并载入环境变量
-if (fs.existsSync(DASHSCOPE_FILE)) {
-    try {
-        const d = JSON.parse(fs.readFileSync(DASHSCOPE_FILE, 'utf8'));
-        if (d.api_key && !process.env.DASHSCOPE_API_KEY) {
-            process.env.DASHSCOPE_API_KEY = d.api_key;
-        }
-    } catch (e) {}
-}
 
 function loadJson(file, fallback = []) {
     if (file === STUDIO_FILE && process.env.STUDIO_ACCOUNTS_JSON) {
@@ -42,15 +31,8 @@ function saveJson(file, data) {
     fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
 }
 
-// 1. 获取账号池概况与配额
+// 1. 获取账号池概况与免费配额
 router.get('/accounts', (req, res) => {
-    if (!process.env.DASHSCOPE_API_KEY && fs.existsSync(DASHSCOPE_FILE)) {
-        try {
-            const d = JSON.parse(fs.readFileSync(DASHSCOPE_FILE, 'utf8'));
-            if (d.api_key) process.env.DASHSCOPE_API_KEY = d.api_key;
-        } catch (e) {}
-    }
-
     const studios = loadJson(STUDIO_FILE, []);
     const tokens = loadJson(TOKENS_FILE, []);
 
@@ -84,13 +66,11 @@ router.get('/accounts', (req, res) => {
         };
     });
 
-    const totalAccounts = accounts.length;
     res.json({
         success: true,
-        totalAccounts,
+        totalAccounts: accounts.length,
         validStudioCount,
         validChatCount,
-        dashscopeConfigured: Boolean(process.env.DASHSCOPE_API_KEY),
         summary: {
             total2kImagesPerDay: validStudioCount * 25,
             totalVideosPerDay: validStudioCount * 1,
@@ -118,18 +98,17 @@ router.post('/fetch-code', async (req, res) => {
     }
 });
 
-// 3. 直接录入通义千问 Cookie / Token 凭证
+// 3. 网页端直接录入单个通义千问 Cookie / Token 凭证
 router.post('/qwen-credential', (req, res) => {
     const { name, cookies, auth_token, token } = req.body;
     if (!cookies && !auth_token && !token) {
         return res.status(400).json({ error: '请至少提供通义千问 Cookie、auth_token 或 JWT Token 中的一项' });
     }
 
-    const id = (name || '').trim() || `qwen_acc_${Date.now()}`;
+    const id = (name || '').trim() || `qwen_free_${Date.now()}`;
     const studios = loadJson(STUDIO_FILE, []);
     const tokens = loadJson(TOKENS_FILE, []);
 
-    // 尝试从 Cookie 中提取 refresh_token
     let cookieRefreshToken = '';
     if (cookies) {
         const match = cookies.match(/refresh_token=([^;]+)/);
@@ -138,7 +117,6 @@ router.post('/qwen-credential', (req, res) => {
 
     const finalToken = (auth_token || token || cookieRefreshToken || '').trim();
 
-    // 更新 Studio 账号池
     const existingStudioIdx = studios.findIndex(s => s.id === id || s.name === id);
     const studioEntry = {
         id,
@@ -148,6 +126,7 @@ router.post('/qwen-credential', (req, res) => {
         cookies: cookies ? cookies.trim() : (existingStudioIdx >= 0 ? studios[existingStudioIdx].cookies : ''),
         daily_credits: 50,
         cost_per_image: 2,
+        cost_per_video: 30,
         status: 'active',
         updated_at: new Date().toISOString()
     };
@@ -159,7 +138,6 @@ router.post('/qwen-credential', (req, res) => {
     }
     saveJson(STUDIO_FILE, studios);
 
-    // 同步更新主站对话 Token 池
     if (finalToken) {
         const existingTokenIdx = tokens.findIndex(t => t.id === id);
         const tokenEntry = {
@@ -179,12 +157,121 @@ router.post('/qwen-credential', (req, res) => {
 
     res.json({
         success: true,
-        message: `成功录入通义千问凭证【${id}】！2K 原画与视频生成通道已即刻激活。`,
+        message: `成功在网页端录入通义千问凭证【${id}】！2K 原画与视频生成通道已即刻激活。`,
         account: studioEntry
     });
 });
 
-// 3.1 删除单个通义千问账号
+// 4. 网页端批量粘贴录入多个通义千问 Cookie（支持多行，一行一个）
+router.post('/import-cookies', (req, res) => {
+    const { raw_text } = req.body;
+    if (!raw_text || typeof raw_text !== 'string') {
+        return res.status(400).json({ error: '请提供待录入的 Cookie 文本' });
+    }
+
+    const lines = raw_text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    if (!lines.length) {
+        return res.status(400).json({ error: '未检测到有效 Cookie 行' });
+    }
+
+    const studios = loadJson(STUDIO_FILE, []);
+    const tokens = loadJson(TOKENS_FILE, []);
+    let count = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        let name = '';
+        let cookieStr = '';
+        if (line.includes('----')) {
+            const parts = line.split('----');
+            name = parts[0].trim();
+            cookieStr = parts.slice(1).join('----').trim();
+        } else {
+            cookieStr = line;
+            name = `qwen_free_${Date.now()}_${i + 1}`;
+        }
+
+        let cookieRefreshToken = '';
+        const match = cookieStr.match(/refresh_token=([^;]+)/);
+        if (match) cookieRefreshToken = match[1];
+
+        const finalToken = cookieRefreshToken || '';
+        const existingStudioIdx = studios.findIndex(s => s.id === name || s.name === name);
+        const studioEntry = {
+            id: name,
+            name: name,
+            auth_token: finalToken,
+            refresh_token: cookieRefreshToken,
+            cookies: cookieStr,
+            daily_credits: 50,
+            cost_per_image: 2,
+            cost_per_video: 30,
+            status: 'active',
+            updated_at: new Date().toISOString()
+        };
+
+        if (existingStudioIdx >= 0) {
+            studios[existingStudioIdx] = { ...studios[existingStudioIdx], ...studioEntry };
+        } else {
+            studios.push(studioEntry);
+        }
+
+        if (finalToken) {
+            const existingTokenIdx = tokens.findIndex(t => t.id === name);
+            const tokenEntry = {
+                id: name,
+                token: finalToken,
+                added_at: new Date().toISOString(),
+                invalid: false,
+                resetAt: null
+            };
+            if (existingTokenIdx >= 0) {
+                tokens[existingTokenIdx] = { ...tokens[existingTokenIdx], ...tokenEntry };
+            } else {
+                tokens.push(tokenEntry);
+            }
+        }
+        count++;
+    }
+
+    saveJson(STUDIO_FILE, studios);
+    saveJson(TOKENS_FILE, tokens);
+
+    res.json({
+        success: true,
+        message: `成功在网页端批量录入 ${count} 个通义千问免费账号！2K 原画与视频已即刻就绪。`,
+        importedCount: count
+    });
+});
+
+// 5. 网页端直接上传 Antigravity 认证 JSON 文件 (保存至 /data/auths)
+router.post('/auth-upload', (req, res) => {
+    const { filename, content } = req.body;
+    if (!filename || !content) {
+        return res.status(400).json({ error: '缺少认证文件名或凭据内容' });
+    }
+    const safeName = path.basename(filename);
+    if (!safeName.endsWith('.json')) {
+        return res.status(400).json({ error: '认证文件必须为 .json 文件' });
+    }
+
+    const authDir = '/data/auths';
+    const altDir = '/root/.cli-proxy-api';
+    [authDir, altDir].forEach(d => {
+        try {
+            if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+            const strContent = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+            fs.writeFileSync(path.join(d, safeName), strContent, 'utf8');
+        } catch (e) {}
+    });
+
+    res.json({
+        success: true,
+        message: `成功在网页端录入 Antigravity 认证凭证【${safeName}】！底层服务已即时识别并生效。`
+    });
+});
+
+// 6. 删除单个账号
 router.delete('/account/:id', (req, res) => {
     const { id } = req.params;
     const studios = loadJson(STUDIO_FILE, []).filter(s => s.id !== id && s.name !== id);
@@ -194,19 +281,7 @@ router.delete('/account/:id', (req, res) => {
     res.json({ success: true, message: `账号【${id}】已成功从账号池中移除。` });
 });
 
-// 4. 一键配置并保存 DashScope (阿里云百炼) 密钥
-router.post('/dashscope-key', (req, res) => {
-    const { api_key } = req.body;
-    if (!api_key || typeof api_key !== 'string') {
-        return res.status(400).json({ error: '请提供有效的 API Key (例如 sk-...)' });
-    }
-    const cleanKey = api_key.trim();
-    process.env.DASHSCOPE_API_KEY = cleanKey;
-    saveJson(DASHSCOPE_FILE, { api_key: cleanKey, updated_at: new Date().toISOString() });
-    res.json({ success: true, message: 'DashScope API Key 已成功保存并在云端即时生效！' });
-});
-
-// 5. 批量解析并入库账号
+// 7. 批量解析并入库微软 Outlook 账号
 router.post('/import', async (req, res) => {
     const { raw_text } = req.body;
     if (!raw_text || typeof raw_text !== 'string') {
@@ -219,10 +294,7 @@ router.post('/import', async (req, res) => {
     for (const line of lines) {
         const parts = line.split('----').map(p => p.trim());
         if (parts.length >= 2) {
-            const acc = {
-                email: parts[0],
-                password: parts[1]
-            };
+            const acc = { email: parts[0], password: parts[1] };
             if (parts.length >= 4) {
                 acc.client_id = parts[2];
                 acc.refresh_token = parts[3];
@@ -232,12 +304,11 @@ router.post('/import', async (req, res) => {
     }
 
     if (!parsedAccounts.length) {
-        return res.status(400).json({ error: '未能解析出有效账号，请检查格式 (邮箱----密码----client_id----refresh_token)' });
+        return res.status(400).json({ error: '未能解析出有效账号，格式：邮箱----密码----client_id----refresh_token' });
     }
 
     const results = [];
     const studios = loadJson(STUDIO_FILE, []);
-    const tokens = loadJson(TOKENS_FILE, []);
 
     for (const acc of parsedAccounts) {
         let codeCheck = null;
@@ -286,7 +357,7 @@ router.post('/import', async (req, res) => {
     });
 });
 
-// 6. 导出与备份全量凭证池（包含 Antigravity、Qwen Studio、Tokens、DashScope 等所有凭据）
+// 8. 导出全量凭证备份 (Antigravity OAuth + 通义千问免费账号池)
 router.get('/auths-backup', (req, res) => {
     const authDir = '/data/auths';
     const altDir = '/root/.cli-proxy-api';
@@ -303,33 +374,20 @@ router.get('/auths-backup', (req, res) => {
                 const stat = fs.statSync(fullPath);
                 if (stat.isFile() && fname.endsWith('.json')) {
                     const content = fs.readFileSync(fullPath, 'utf8');
-                    files.push({
-                        filename: fname,
-                        dir: d,
-                        size: stat.size,
-                        modified: stat.mtime
-                    });
+                    files.push({ filename: fname, dir: d, size: stat.size, modified: stat.mtime });
                     contentsMap[fname] = content;
                 }
             });
         } catch (e) {}
     });
 
-    // 附带打包通义千问与 DashScope 配置
     if (fs.existsSync(STUDIO_FILE)) {
-        const content = fs.readFileSync(STUDIO_FILE, 'utf8');
-        contentsMap['__session_studio_accounts.json'] = content;
-        files.push({ filename: '通义千问 Studio 凭证 (studio_accounts.json)', dir: 'session', size: fs.statSync(STUDIO_FILE).size });
+        contentsMap['__session_studio_accounts.json'] = fs.readFileSync(STUDIO_FILE, 'utf8');
+        files.push({ filename: '通义千问免费创作池 (studio_accounts.json)', dir: 'session', size: fs.statSync(STUDIO_FILE).size });
     }
     if (fs.existsSync(TOKENS_FILE)) {
-        const content = fs.readFileSync(TOKENS_FILE, 'utf8');
-        contentsMap['__session_tokens.json'] = content;
-        files.push({ filename: '通义千问主站对话 Token (tokens.json)', dir: 'session', size: fs.statSync(TOKENS_FILE).size });
-    }
-    if (fs.existsSync(DASHSCOPE_FILE)) {
-        const content = fs.readFileSync(DASHSCOPE_FILE, 'utf8');
-        contentsMap['__session_dashscope.json'] = content;
-        files.push({ filename: '阿里云百炼 DashScope 密钥 (dashscope.json)', dir: 'session', size: fs.statSync(DASHSCOPE_FILE).size });
+        contentsMap['__session_tokens.json'] = fs.readFileSync(TOKENS_FILE, 'utf8');
+        files.push({ filename: '通义千问主站 Token (tokens.json)', dir: 'session', size: fs.statSync(TOKENS_FILE).size });
     }
 
     const backupB64 = Buffer.from(JSON.stringify(contentsMap)).toString('base64');
@@ -338,26 +396,30 @@ router.get('/auths-backup', (req, res) => {
         success: true,
         count: files.length,
         files,
-        backup_b64: files.length > 0 ? backupB64 : null
+        backup_b64: files.length > 0 ? backupB64 : null,
+        backupBase64: files.length > 0 ? backupB64 : null
     });
 });
 
-// 7. 还原全量凭据池
+// 9. 还原全量凭据池 (支持 Base64 或 JSON 文本)
 router.post('/auths-restore', (req, res) => {
-    const { backup_b64, files } = req.body;
+    const { backup_b64, backupBase64, files } = req.body;
+    const rawB64 = backup_b64 || backupBase64;
     let targetMap = files || {};
 
-    if (backup_b64) {
+    if (rawB64) {
         try {
-            targetMap = JSON.parse(Buffer.from(backup_b64, 'base64').toString('utf8'));
+            targetMap = JSON.parse(Buffer.from(rawB64.trim(), 'base64').toString('utf8'));
         } catch (e) {
             return res.status(400).json({ error: '无效的 Base64 凭据备份字符串' });
         }
     }
 
     const authDir = '/data/auths';
-    if (!fs.existsSync(authDir)) fs.mkdirSync(authDir, { recursive: true });
-    if (!fs.existsSync(SESSION_DIR)) fs.mkdirSync(SESSION_DIR, { recursive: true });
+    const altDir = '/root/.cli-proxy-api';
+    [authDir, altDir, SESSION_DIR].forEach(d => {
+        if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+    });
 
     let restored = 0;
     Object.entries(targetMap).forEach(([fname, content]) => {
@@ -368,23 +430,18 @@ router.post('/auths-restore', (req, res) => {
         } else if (fname === '__session_tokens.json') {
             fs.writeFileSync(TOKENS_FILE, strContent, 'utf8');
             restored++;
-        } else if (fname === '__session_dashscope.json') {
-            fs.writeFileSync(DASHSCOPE_FILE, strContent, 'utf8');
-            try {
-                const parsed = JSON.parse(strContent);
-                if (parsed.api_key) process.env.DASHSCOPE_API_KEY = parsed.api_key;
-            } catch (e) {}
-            restored++;
-        } else if (fname.endsWith('.json')) {
-            fs.writeFileSync(path.join(authDir, fname), strContent, 'utf8');
+        } else {
+            const safeName = path.basename(fname);
+            fs.writeFileSync(path.join(authDir, safeName), strContent, 'utf8');
+            try { fs.writeFileSync(path.join(altDir, safeName), strContent, 'utf8'); } catch (e) {}
             restored++;
         }
     });
 
     res.json({
         success: true,
-        restored,
-        message: `成功还原 ${restored} 个持久化凭据文件！`
+        message: `成功还原 ${restored} 个凭证文件！Antigravity 与通义千问免费账号池已全面激活。`,
+        restoredCount: restored
     });
 });
 

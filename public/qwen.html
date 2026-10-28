@@ -34,7 +34,7 @@
             </div>
             <div>
                 <h1 class="text-base font-bold gradient-text tracking-tight">通义千问 Creative Studio</h1>
-                <p class="text-xs text-slate-400">独立模型中心 · 2K 原画 (2048x2048) & HappyHorse 1.1 电影生视频</p>
+                <p class="text-xs text-slate-400">独立模型中心 · 2K 原画 (2048x2048) & HappyHorse 1.1 电影生视频 · 纯免费账号池</p>
             </div>
         </div>
         
@@ -58,13 +58,13 @@
                 <i class="fa-solid fa-chart-pie w-5 text-center"></i> 配额与账号池
             </button>
             <button onclick="switchTab('import')" id="tab-btn-import" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
-                <i class="fa-solid fa-key w-5 text-center"></i> 凭证录入与自动导入
+                <i class="fa-solid fa-file-import w-5 text-center"></i> 凭证网页在线导入
             </button>
             <button onclick="switchTab('playground')" id="tab-btn-playground" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
                 <i class="fa-solid fa-clapperboard w-5 text-center"></i> 2K生图 & 视频试炼场
             </button>
             <button onclick="switchTab('backup')" id="tab-btn-backup" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
-                <i class="fa-solid fa-shield-halved w-5 text-center"></i> 凭证永久备份 (防丢)
+                <i class="fa-solid fa-shield-halved w-5 text-center"></i> 凭证永久备份与恢复
             </button>
             <button onclick="switchTab('gateway')" id="tab-btn-gateway" class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all">
                 <i class="fa-solid fa-network-wired w-5 text-center"></i> 远程 API 接入中心
@@ -100,9 +100,9 @@
                         <div class="text-xs text-slate-400 mt-2">单号 1 条 / 5秒电影级连贯动作</div>
                     </div>
                     <div class="glass p-5 rounded-2xl border-l-4 border-l-cyan-500">
-                        <div class="text-slate-400 text-xs font-medium uppercase">DashScope 官方引擎</div>
-                        <div class="text-2xl font-extrabold text-cyan-400 mt-1" id="stat-dashscope">检测中...</div>
-                        <div class="text-xs text-slate-400 mt-2">阿里云百炼 API 直连备灾</div>
+                        <div class="text-slate-400 text-xs font-medium uppercase">Antigravity 认证池</div>
+                        <div class="text-2xl font-extrabold text-cyan-400 mt-1" id="stat-ag-status">动态就绪</div>
+                        <div class="text-xs text-slate-400 mt-2">支持网页直传与热重载</div>
                     </div>
                 </div>
 
@@ -136,15 +136,64 @@
                 </div>
             </section>
 
-            <!-- 视图 2：凭证录入与自动导入 -->
+            <!-- 视图 2：凭证网页在线导入 (告别本地脚本与文件) -->
             <section id="view-import" class="space-y-6 hidden">
-                <!-- 方式一：直接录入 Cookie / Token -->
+                <div class="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-4 flex items-start gap-3">
+                    <i class="fa-solid fa-circle-check text-emerald-400 text-lg mt-0.5"></i>
+                    <div class="text-xs text-emerald-200 leading-relaxed">
+                        <b>纯免费账号池直连体系：</b>本平台所有能力均由免费账号池驱动，彻底免除第三方商业付费 API。
+                        所有凭据的录入、上传与恢复均直接在本网页中完成，无需在本地运行任何 Python 脚本或批处理文件。
+                    </div>
+                </div>
+
+                <!-- 模块一：Antigravity 认证文件 (.json) 网页端直接导入 -->
+                <div class="glass rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-file-arrow-up text-cyan-400"></i> Antigravity 认证文件 (.json) 网页端直接上传
+                        </h2>
+                        <span class="text-xs text-cyan-400 bg-cyan-950/60 px-2.5 py-1 rounded-lg border border-cyan-500/30">底层即时热重载</span>
+                    </div>
+                    <p class="text-xs text-slate-400">
+                        直接在此处选择或拖入本地的 Antigravity 认证凭证 JSON 文件（如 <code>antigravity-*.json</code>）。文件将直接送入服务端的凭证池中，底层服务立即自动生效，无需重启服务或在本地执行脚本：
+                    </p>
+                    
+                    <div id="auth-dropzone" class="border-2 border-dashed border-slate-700 hover:border-cyan-500 rounded-2xl p-6 text-center cursor-pointer transition-all bg-slate-900/40" onclick="document.getElementById('auth-file-input').click()">
+                        <input id="auth-file-input" type="file" accept=".json" multiple class="hidden" onchange="handleAuthFilesSelected(this.files)">
+                        <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto text-cyan-400 text-xl mb-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <div class="text-xs font-semibold text-slate-200">点击选择或将 Antigravity .json 凭据拖拽至此处</div>
+                        <div class="text-xs text-slate-500 mt-1">支持一次选择多个 JSON 凭证文件，浏览器直接上传至云端</div>
+                    </div>
+
+                    <div id="auth-upload-log" class="hidden space-y-2 pt-1 text-xs font-mono"></div>
+                </div>
+
+                <!-- 模块二：通义千问 Cookie 批量多账号录入 -->
                 <div class="glass rounded-2xl p-6 space-y-4">
                     <h2 class="text-base font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-bolt text-emerald-400"></i> 方式一：直接录入通义千问 Cookie / Token
+                        <i class="fa-solid fa-cookie-bite text-amber-400"></i> 通义千问 Cookie 批量快速录入
                     </h2>
                     <p class="text-xs text-slate-400">
-                        在浏览器登录 <a href="https://create.qwen.com" target="_blank" class="text-emerald-400 underline">create.qwen.com</a>，按 F12 在控制台执行 <code>document.cookie</code> 复制整串 Cookie 粘贴到下方，一键保存并激活：
+                        支持批量录入多个免费账号。在输入框中粘贴 Cookie（一行一个，或采用 <code>备注/邮箱----Cookie</code> 格式），系统自动提取 refresh_token 并激活账号：
+                    </p>
+                    <textarea id="batch-cookie-text" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand-500" placeholder="账号1备注----_qw_...; refresh_token=eyJ...;&#10;账号2备注----_qw_...; refresh_token=eyJ...;&#10;或直接单行粘贴纯 Cookie"></textarea>
+                    <div class="flex items-center gap-3">
+                        <button onclick="submitBatchCookies()" id="btn-batch-cookies" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-brand-500/20">
+                            🚀 立即批量保存并激活账号池
+                        </button>
+                        <span id="batch-cookie-status" class="text-xs text-slate-400"></span>
+                    </div>
+                </div>
+
+                <!-- 模块三：单账号 Cookie / Token 手动录入 -->
+                <div class="glass rounded-2xl p-6 space-y-4">
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-bolt text-emerald-400"></i> 单个通义千问 Cookie / Token 手动录入
+                    </h2>
+                    <p class="text-xs text-slate-400">
+                        在浏览器登录 <a href="https://create.qwen.com" target="_blank" class="text-emerald-400 underline">create.qwen.com</a>，按 F12 在控制台执行 <code>document.cookie</code> 复制整串 Cookie 粘贴到下方：
                     </p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -165,31 +214,15 @@
                     </button>
                 </div>
 
-                <!-- 方式二：配置阿里云百炼 Key -->
+                <!-- 模块四：微软 Outlook 自动收件批量导入 -->
                 <div class="glass rounded-2xl p-6 space-y-4">
                     <h2 class="text-base font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-gem text-cyan-400"></i> 方式二：配置阿里云百炼 (DashScope) 官方密钥
-                    </h2>
-                    <p class="text-xs text-slate-400">
-                        阿里云百炼新开通账号拥有大量免费生图额度。录入 API Key 后，系统自动直连官方旗舰生图通道，彻底免维护、永不掉线：
-                    </p>
-                    <div class="flex gap-3">
-                        <input id="dashscope-key-input" type="text" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand-500" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-                        <button onclick="submitDashscopeKey()" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-cyan-500/20">
-                            💾 保存百炼密钥
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 方式三：微软 Outlook 自动收码导入 -->
-                <div class="glass rounded-2xl p-6 space-y-4">
-                    <h2 class="text-base font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-envelope-open-text text-amber-400"></i> 方式三：微软 Outlook 自动取件 & 批量导入
+                        <i class="fa-solid fa-envelope-open-text text-amber-400"></i> 微软 Outlook 自动取件 & 批量导入
                     </h2>
                     <p class="text-xs text-slate-400">
                         粘贴包含 client_id 与 refresh_token 的账号行，系统直连微软 Graph API 自动收取 6 位验证码：
                     </p>
-                    <textarea id="import-text" rows="5" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand-500" placeholder="账号格式（一行一个）：&#10;邮箱----密码----client_id----refresh_token"></textarea>
+                    <textarea id="import-text" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand-500" placeholder="账号格式（一行一个）：&#10;邮箱----密码----client_id----refresh_token"></textarea>
                     <div class="flex gap-2">
                         <button onclick="testSampleCode()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium transition-colors">
                             <i class="fa-solid fa-envelope"></i> 测试首行自动取件
@@ -281,22 +314,45 @@
                 </div>
             </section>
 
-            <!-- 视图 4：凭证永久备份 -->
+            <!-- 视图 4：凭证永久备份与一键恢复 -->
             <section id="view-backup" class="space-y-6 hidden">
-                <div class="glass rounded-2xl p-6 space-y-4">
-                    <h2 class="text-base font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-shield-halved text-emerald-400"></i> Render 凭证持久化与防丢失机制
-                    </h2>
-                    <p class="text-xs text-slate-400 leading-relaxed">
-                        Render 免费实例的磁盘属于<b>临时容器层</b>。当 Render 云端重新构建或重启容器时，临时文件会被重置。<br>
-                        <b>彻底告别重置的方法：</b>点击下方按钮生成持久化备份，将其配置到 Render 的 <code>Environment Variables</code>，以后云端无论如何重启更新，所有 Antigravity / 通义千问凭据永久生效并开机自启自动还原！
-                    </p>
-                    <button onclick="generateBackup()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/20">
-                        📋 一键导出全量持久化环境变量 (Render 专用)
-                    </button>
-                    <div id="backup-output-box" class="hidden space-y-2 pt-2">
-                        <label class="text-xs font-semibold text-slate-300 block">将以下 Base64 字符串配置到 Render 后台 Environment -> Key 填 <code>RENDER_AUTHS_BACKUP</code>：</label>
-                        <textarea id="backup-output" rows="4" readonly class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200"></textarea>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 导出备份 -->
+                    <div class="glass rounded-2xl p-6 space-y-4">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i> 步骤一：一键导出全量凭据备份
+                        </h2>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            点击下方按钮将云端所有凭据（包括 Antigravity OAuth 认证与通义千问免费账号池）打包为 Base64 字符串。<br>
+                            可将其配置到 Render 的 <code>Environment Variables</code>（Key: <code>RENDER_AUTHS_BACKUP</code>），以后云端无论如何重启更新，开机均自动还原生效！
+                        </p>
+                        <button onclick="generateBackup()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-500/20">
+                            📋 一键导出全量持久化凭证
+                        </button>
+                        <div id="backup-output-box" class="hidden space-y-2 pt-2">
+                            <label class="text-xs font-semibold text-slate-300 block">导出的 Base64 备份字符串（已自动复制）：</label>
+                            <textarea id="backup-output" rows="4" readonly class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 网页端一键还原 -->
+                    <div class="glass rounded-2xl p-6 space-y-4">
+                        <h2 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-left text-cyan-400"></i> 步骤二：网页端直接粘贴还原凭据
+                        </h2>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            如果您手头有之前导出的 Base64 凭据备份，直接粘贴在下方文本框中，点击还原即可瞬间将 Antigravity 与通义千问凭据全部写回云端，即刻恢复服务：
+                        </p>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-300 block mb-1">粘贴 Base64 备份字符串：</label>
+                            <textarea id="restore-input" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500" placeholder="粘贴之前的 Base64 备份字符..."></textarea>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="restoreBackupFromText()" id="btn-restore" class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-cyan-500/20">
+                                ⚡ 立即在网页端还原所有凭据到云端
+                            </button>
+                            <span id="restore-status" class="text-xs text-slate-400"></span>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -308,7 +364,7 @@
                         <i class="fa-solid fa-network-wired text-brand-500"></i> 全局远程 API 接入参数
                     </h2>
                     <p class="text-xs text-slate-400">
-                        可以在全球任何客户端（NextChat、Cherry Studio、Python、本地工作流等）直接调用：
+                        本反代平台已转为标准 OpenAI 协议格式接口，可在 Cherry Studio、NextChat、Python 脚本或本地自动化中直接调用：
                     </p>
                     <div class="space-y-3">
                         <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
@@ -324,6 +380,24 @@
                                 <div class="text-sm font-mono text-slate-200 font-bold" id="gw-key">sk-antigravity-secret-8888</div>
                             </div>
                             <button onclick="copyText('gw-key')" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs">复制</button>
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <div class="text-xs font-semibold text-slate-300 mb-2">可调用模型列表：</div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                                <div class="font-bold text-purple-400">qwen-image-2k</div>
+                                <div class="text-slate-500 text-[11px] mt-1">2048x2048 超高清 2K 画王生图</div>
+                            </div>
+                            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                                <div class="font-bold text-pink-400">happyhorse1.1</div>
+                                <div class="text-slate-500 text-[11px] mt-1">5秒电影级高动态 MP4 视频生成</div>
+                            </div>
+                            <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                                <div class="font-bold text-emerald-400">gemini-2.5-pro / claude</div>
+                                <div class="text-slate-500 text-[11px] mt-1">Antigravity 旗舰大语言模型与多模态</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -370,17 +444,10 @@
                     document.getElementById('stat-total-accounts').innerText = data.totalAccounts || 0;
                     document.getElementById('stat-total-2k').innerText = data.summary?.total2kImagesPerDay || 0;
                     document.getElementById('stat-total-videos').innerText = data.summary?.totalVideosPerDay || 0;
-                    
-                    const dashEl = document.getElementById('stat-dashscope');
-                    if (dashEl) {
-                        dashEl.innerHTML = data.dashscopeConfigured 
-                            ? '<span class="text-emerald-400 text-xl font-bold">🟢 已配置 (免登)</span>' 
-                            : '<span class="text-slate-500 text-lg">⚪ 未配置</span>';
-                    }
 
                     const tbody = document.getElementById('accounts-table-body');
                     if (!data.accounts || data.accounts.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500">暂无挂载账号，请在【凭证录入与自动导入】中添加 Cookie 或百炼 Key</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500">暂无挂载账号，请前往【凭证网页在线导入】直接粘贴 Cookie 或上传凭证</td></tr>';
                     } else {
                         tbody.innerHTML = data.accounts.map(acc => `
                             <tr class="hover:bg-slate-800/30 transition-colors">
@@ -415,6 +482,110 @@
             }
         }
 
+        // 1. Antigravity JSON 凭证文件网页端直接上传
+        async function handleAuthFilesSelected(files) {
+            if (!files || !files.length) return;
+            const logBox = document.getElementById('auth-upload-log');
+            logBox.classList.remove('hidden');
+            logBox.innerHTML = '<div class="text-cyan-400">▶ 正在上传并装载 Antigravity 凭证文件...</div>';
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (!file.name.endsWith('.json')) {
+                    logBox.innerHTML += `<div class="text-amber-400">⚠️ 跳过非 JSON 文件: ${file.name}</div>`;
+                    continue;
+                }
+
+                try {
+                    const content = await readFileAsText(file);
+                    // 校验是否是合法 JSON
+                    JSON.parse(content);
+                    const res = await fetch('/api/management/auth-upload', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename: file.name, content })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        logBox.innerHTML += `<div class="text-emerald-400">✅ 成功装载凭证【${file.name}】至云端凭证池并即时生效！</div>`;
+                    } else {
+                        logBox.innerHTML += `<div class="text-red-400">❌ 上传失败【${file.name}】: ${data.error}</div>`;
+                    }
+                } catch (err) {
+                    logBox.innerHTML += `<div class="text-red-400">❌ 文件【${file.name}】读取或解析失败: ${err.message}</div>`;
+                }
+            }
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsText(file);
+            });
+        }
+
+        // 拖拽支持
+        const dropzone = document.getElementById('auth-dropzone');
+        if (dropzone) {
+            ['dragenter', 'dragover'].forEach(name => {
+                dropzone.addEventListener(name, (e) => {
+                    e.preventDefault();
+                    dropzone.classList.add('border-cyan-400', 'bg-cyan-950/20');
+                });
+            });
+            ['dragleave', 'drop'].forEach(name => {
+                dropzone.addEventListener(name, (e) => {
+                    e.preventDefault();
+                    dropzone.classList.remove('border-cyan-400', 'bg-cyan-950/20');
+                });
+            });
+            dropzone.addEventListener('drop', (e) => {
+                if (e.dataTransfer && e.dataTransfer.files) {
+                    handleAuthFilesSelected(e.dataTransfer.files);
+                }
+            });
+        }
+
+        // 2. 通义千问 Cookie 批量录入
+        async function submitBatchCookies() {
+            const raw = document.getElementById('batch-cookie-text').value.trim();
+            if (!raw) {
+                alert('请在文本框中粘贴待导入的 Cookie！');
+                return;
+            }
+
+            const btn = document.getElementById('btn-batch-cookies');
+            const status = document.getElementById('batch-cookie-status');
+            btn.disabled = true;
+            status.innerText = '正在批量录入账号...';
+
+            try {
+                const res = await fetch('/api/management/import-cookies', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ raw_text: raw })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    document.getElementById('batch-cookie-text').value = '';
+                    status.innerText = `✅ 已成功导入 ${data.importedCount} 个账号！`;
+                    loadAccounts();
+                } else {
+                    alert('导入失败: ' + (data.error || '未知错误'));
+                    status.innerText = '导入失败';
+                }
+            } catch (e) {
+                alert('网络异常: ' + e.message);
+                status.innerText = '网络异常';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 3. 单账号 Cookie / Token 手动录入
         async function submitCredential() {
             const name = document.getElementById('cred-name').value.trim();
             const cookies = document.getElementById('cred-cookie').value.trim();
@@ -445,30 +616,7 @@
             }
         }
 
-        async function submitDashscopeKey() {
-            const key = document.getElementById('dashscope-key-input').value.trim();
-            if (!key) {
-                alert('请输入有效 API Key (sk-...)');
-                return;
-            }
-            try {
-                const res = await fetch('/api/management/dashscope-key', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ api_key: key })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(data.message);
-                    loadAccounts();
-                } else {
-                    alert('保存失败: ' + (data.error || '未知错误'));
-                }
-            } catch (e) {
-                alert('请求失败: ' + e.message);
-            }
-        }
-
+        // 4. 微软 Outlook 自动收件导入
         async function testSampleCode() {
             const raw = document.getElementById('import-text').value.trim();
             if (!raw) {
@@ -544,6 +692,7 @@
             }
         }
 
+        // 5. 凭证备份与还原
         async function generateBackup() {
             try {
                 const res = await fetch('/api/management/auths-backup');
@@ -552,7 +701,7 @@
                     document.getElementById('backup-output').value = data.backupBase64;
                     document.getElementById('backup-output-box').classList.remove('hidden');
                     navigator.clipboard.writeText(data.backupBase64);
-                    alert('已复制持久化 Base64 到剪贴板！请前往 Render 仪表盘 Environment Variables 新建 RENDER_AUTHS_BACKUP 并粘贴保存。');
+                    alert('已复制持久化 Base64 到剪贴板！可前往 Render 仪表盘 Environment Variables 新建 RENDER_AUTHS_BACKUP 并粘贴保存。');
                 } else {
                     alert('当前凭据池暂无凭据可备份，请先完成授权或录入！');
                 }
@@ -561,6 +710,43 @@
             }
         }
 
+        async function restoreBackupFromText() {
+            const raw = document.getElementById('restore-input').value.trim();
+            if (!raw) {
+                alert('请在文本框中粘贴 Base64 备份字符串！');
+                return;
+            }
+
+            const btn = document.getElementById('btn-restore');
+            const status = document.getElementById('restore-status');
+            btn.disabled = true;
+            status.innerText = '正在还原凭据...';
+
+            try {
+                const res = await fetch('/api/management/auths-restore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ backupBase64: raw })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message);
+                    status.innerText = `✅ 成功还原 ${data.restoredCount} 个凭证文件！`;
+                    document.getElementById('restore-input').value = '';
+                    loadAccounts();
+                } else {
+                    alert('还原失败: ' + (data.error || '未知错误'));
+                    status.innerText = '还原失败';
+                }
+            } catch (e) {
+                alert('请求异常: ' + e.message);
+                status.innerText = '请求异常';
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // 6. 创作试炼场
         async function runGeneration() {
             const prompt = document.getElementById('pg-prompt').value.trim();
             if (!prompt) {
@@ -581,7 +767,7 @@
 
             try {
                 if (currentMode === 'image') {
-                    document.getElementById('pg-loading-text').innerText = '正在生成 2048x2048 2K 原画...';
+                    document.getElementById('pg-loading-text').innerText = '正在使用 2K 画王生成 2048x2048 原画...';
                     const res = await fetch('/v1/images/generations', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -592,7 +778,7 @@
                     if (!url) throw new Error(data.error?.message || data.error || '未返回图片 URL');
                     showResult(url, 'image');
                 } else {
-                    document.getElementById('pg-loading-text').innerText = '正在生成 HappyHorse 1.1 5秒 视频...';
+                    document.getElementById('pg-loading-text').innerText = '正在使用 HappyHorse 1.1 生成 5 秒电影级视频...';
                     const res = await fetch('/v1/videos/generations', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

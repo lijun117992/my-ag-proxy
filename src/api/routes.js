@@ -2366,8 +2366,8 @@ router.post('/images/generations', async (req, res) => {
                 }
             } else if (provider === 'dashscope') {
                 return res.status(503).json({
-                    error: 'DashScope API 未配置',
-                    message: '请在侧边栏【通义千问】模块中配置 DASHSCOPE_API_KEY，或添加通义千问 Studio 凭证。'
+                    error: '未配置外部 API 服务',
+                    message: '请前往【通义千问】控制台 (/qwen.html) 录入通义千问免费账号 Cookie 凭证。'
                 });
             }
         }
@@ -2412,11 +2412,12 @@ router.post('/images/generations', async (req, res) => {
             return res.json(buildOpenAiImageResponse({ imageUrl, prompt, model: chatModel, raw: result }));
         }
 
-        // 若三大通道均未就绪，返回友好中文提示
+        // 若通道均未就绪，返回友好中文提示
         return res.status(400).json({
-            error: '生图失败: 当前账号池暂无可用有效的授权凭证 (Cookie / Token / DashScope Key)。',
-            message: '请前往侧边栏【通义千问 (2K/视频)】页面添加通义千问 Cookie/Token，或配置 DASHSCOPE_API_KEY。',
-            guide: '1. 在【账号录入】粘贴通义千问 Cookie 或 Token；\n2. 或在【DashScope】录入阿里云百炼 API Key 永久免登。'
+            error: '生图失败: 当前账号池暂无有效通义千问凭证 (Cookie / Token)。',
+            message: '请前往【通义千问】控制台页面录入您的免费账号 Cookie 或 Token。',
+            guide: '直接在【通义千问控制台】的【凭证录入】文本框中粘贴通义千问免费账号的 Cookie，一键保存后即可使用 2K 原画与 5秒 视频。',
+            loginUrl: '/qwen.html'
         });
     } catch (error) {
         logError('图片生成过程异常', error);
@@ -2495,10 +2496,11 @@ router.post('/videos/generations', async (req, res) => {
             return res.json(response);
         }
 
-        // 若无可用通道
+        // 若无可用免费通道
         return res.status(400).json({
-            error: '视频生成失败: 当前账号池暂无可用有效的通义千问 Studio 或主站凭据。',
-            message: '请前往侧边栏【通义千问 (2K/视频)】页面添加通义千问凭据。'
+            error: '视频生成失败: 当前账号池暂无可用有效的通义千问免费账号凭证。',
+            message: '请前往【通义千问】控制台页面 (/qwen.html) 录入通义千问 Cookie 凭证。',
+            loginUrl: '/qwen.html'
         });
     } catch (error) {
         logError('视频生成异常', error);
