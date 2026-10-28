@@ -2,6 +2,9 @@
 
 ## [2.3.0] - 2026-10-27
 ### 修复与云端部署验证 (Fixes & Live Deploy Verification)
+- **桌面端一键批量导入可视化工具**：
+  - 新增桌面启动器 `通义千问批量提取器.bat` 与桌面 GUI 界面 (`scripts/gui_batch_importer.py`)。
+  - 用户可直接在界面粘贴批量账号列表，一键发起半自动流水线，自动填入、自动收取 Outlook 邮件验证码，完成即刻自动直连同步至云端 Render 账号池。
 - **解耦 React Router 与 CPAMC 侧边栏通义千问模块**：
   - 彻底根除点击【通义千问 (2K/视频)】时被 React Router 的通配符规则 `{ path: '*', element: <Navigate to="/" replace /> }` 拦截回仪表盘首页的问题。
   - 将导航链接解耦为原生 DOM 无感切换，增加 `MutationObserver` 守护进程与会话状态记忆，保障在 React SPA 异步刷新时主视图始终稳定呈现千问控制台。
