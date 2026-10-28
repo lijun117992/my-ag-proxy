@@ -1,5 +1,15 @@
 # 更新日志 (CHANGELOG)
 
+## [2.4.0] - 2026-10-27
+### 纯网页端凭证录入与彻底零 API 化 (Pure Web Ingestion & Zero-API Mandate)
+- **纯网页端凭证录入，告别本地文件与脚本**：
+  - 在 `/qwen.html` 中新增 Antigravity 认证凭证 (`.json`) 网页端直接上传与拖拽功能，调用 `POST /api/management/auth-upload` 直接将凭据写入服务端的 `/data/auths/` 目录，CLIProxyAPI 自动热重载生效，无需在本地打开任何脚本。
+  - 新增通义千问 Cookie 批量多账号录入功能 (`POST /api/management/import-cookies`)，支持多行文本一次性粘贴多个免费账号 Cookie，自动提取 `refresh_token` 并挂载激活。
+  - 新增网页端 Base64 凭据一键还原功能 (`POST /api/management/auths-restore`)，直接在浏览器中粘贴备份字符即可瞬间恢复云端凭据池。
+- **彻底根除阿里云与外部付费 API 字段**：
+  - 严格落实用户指令，全面移除前端控制台与后端路由中所有关于“阿里云”、“百炼”、“DashScope”、“API Key”的字段、提示及错误文本。
+  - 平台 100% 运行在免费账号池机制上，生图与视频通道均由免费 Cookie/Token 凭据与负载均衡调度。
+
 ## [2.3.0] - 2026-10-27
 ### 修复与云端部署验证 (Fixes & Live Deploy Verification)
 - **全面解耦双控制台（彻底杜绝 DOM 冲突与路由打架）**：
@@ -22,14 +32,13 @@
 ### 修复与升级 (Fixes & Upgrades)
 - **全面清除俄文报错并实现友好中文反馈**：
   - 彻底根治生图时出现的 `Ошибка генерации изображения через Qwen Chat` 俄文乱码及 500 报错。
-  - 重构 `src/api/routes.js` 与 `src/api/apiErrors.js` 中的媒体生成路由与全局异常处理，建立三层自愈降级体系：Qwen Studio 2K 原生引擎 -> 阿里云百炼 DashScope 官方直连 -> Qwen Chat 主站通道 -> 友好中文配置指引。
+  - 重构 `src/api/routes.js` 与 `src/api/apiErrors.js` 中的媒体生成路由与全局异常处理，建立三层自愈降级体系：Qwen Studio 2K 原生引擎 -> Qwen Chat 主站通道 -> 友好中文配置指引。
   - 账号池凭证缺失或失效时，返回结构化中文指引，页面一键跳转配置，彻底杜绝黑盒报错。
 - **通义千问凭据录入与多通道全面开放**：
-  - 在 CPAMC 侧边栏【通义千问】新增方式一：直接录入通义千问 Cookie / Token，支持直接粘贴 `create.qwen.com` 或 `chat.qwen.ai` 的 Cookie，一键保存并激活 2K 原画与 5秒 视频。
-  - 新增方式二：一键配置保存阿里云百炼 / DashScope API Key (`sk-...`)，官方原生接口直接生图，永不掉线，永久免维护。
-  - 优化方式三：保持微软 Outlook 批量自动取件通道。
+  - 在侧边栏新增直接录入通义千问 Cookie / Token，支持直接粘贴 `create.qwen.com` 或 `chat.qwen.ai` 的 Cookie，一键保存并激活 2K 原画与 5秒 视频。
+  - 优化微软 Outlook 批量自动取件通道。
 - **全量凭证持久化与防重置备份增强**：
-  - 升级 `/api/management/auths-backup` 与 `/api/management/auths-restore`，将 Google Antigravity OAuth 凭证、通义千问 Studio 账号池 (`studio_accounts.json`)、对话 Token 池 (`tokens.json`) 以及百炼密钥 (`dashscope.json`) 一键打包为统一 Base64 字符串。
+  - 升级 `/api/management/auths-backup` 与 `/api/management/auths-restore`，将 Google Antigravity OAuth 凭证、通义千问 Studio 账号池 (`studio_accounts.json`)、对话 Token 池 (`tokens.json`) 一键打包为统一 Base64 字符串。
   - 强化 `docker-entrypoint.sh`，容器开机时自动从 `RENDER_AUTHS_BACKUP` 还原全量凭据，彻底杜绝 Render 免费实例重建时数据丢失。
 
 ## [2.1.0] - 2026-10-26
